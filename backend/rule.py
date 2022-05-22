@@ -3,19 +3,23 @@ Rule
 
 parameters to build model
 """
+
 import datetime
 from typing import Optional
 from pydantic import BaseModel, ValidationError, validator
 
+class RulesSetter:
+    def __init__(self, dict):
+        pass
 
 class RuleSetter:
-    """Set rules"""
+    """Set rule from str"""
 
     def __init__(self, item_str):
         self.raw = item_str
-        self.convert()
-
+        self.set()
     def set(self):
+        self.rules = []
         self.matrix = []
         for l in self.raw.split(","):
             if "|" in l:
@@ -23,7 +27,8 @@ class RuleSetter:
 
             else:
                 self.matrix.append(l)
-
+        for i in self.matrix:
+            self.rules.append(Rule(**i))
 
 class Rule(BaseModel):
     """class to  generate, control and check model:
@@ -35,7 +40,7 @@ class Rule(BaseModel):
     indexation options
     import/export options
     """
-
+    issue_date : str
     model: str = None
     field: str = None
     name_fr: str = None
@@ -70,6 +75,16 @@ class Rule(BaseModel):
     default_en: Optional[str] = None
     comment: str = None
 
+    def _export(self, to="csv"):
+        if to == "csv":
+            rules_meta = self.__dict__.items()
+            header = ",".join(rules_meta.keys())
+            values = "\n".join([",".join(v) for v in rules_meta.values()])
+            csv_str = "\n".join([header]+ values) 
+            return csv_str
+        elif to == "json":
+            self.schema_json(indent=2)
+        
     def _convert(self, to="pydantic_str", value=None):
         if to == "model":
             if self.datatype == "string":
@@ -83,7 +98,9 @@ class Rule(BaseModel):
             if self.datatype == "boolean":
                 return "bool"
             if self.datatype == "date":
-                return "datetime"
+                return "datetime.date"
+            if self.datatype == "date":
+                return "datetime.datetime"
             if self.datatype == "object":
                 return "dict"
             else:
@@ -124,6 +141,12 @@ class Rule(BaseModel):
                 return {self.field: value.split("|")}
             else:
                 return {self.field: value}
+    @validator("issue_date", pre=True)
+    def parse_date(cls, value):
+        return datetime.datetime.strptime(
+            value,
+            "%Y-%m-%d"
+        ).date()
 
     @validator("datatype")
     @classmethod
