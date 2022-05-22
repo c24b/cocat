@@ -40,7 +40,7 @@ class Rule(BaseModel):
     indexation options
     import/export options
     """
-    issue_date : str
+    issue_date : str = None
     model: str = None
     field: str = None
     name_fr: str = None
@@ -143,10 +143,20 @@ class Rule(BaseModel):
                 return {self.field: value}
     @validator("issue_date", pre=True)
     def parse_date(cls, value):
-        return datetime.datetime.strptime(
+        if "/" in value:
+            format = "%Y/%m/%d"
+        elif "-" in value:
+            format = "%Y-%m-%d"
+        date = datetime.datetime.strptime(
             value,
-            "%Y-%m-%d"
-        ).date()
+            "%Y/%m/%d"
+        )
+        return date.date()
+    
+    @validator("external_model_display_keys", pre=True)
+    def parse_external_model_display_keys(cls, value):
+        print(value.split("|"))
+        return value.split("|")
 
     @validator("datatype")
     @classmethod
@@ -164,23 +174,23 @@ class Rule(BaseModel):
             raise ValueError(f"must be in {accepted_datatypes}")
         return datatype
 
-    @validator(
-        "search",
-        "filter",
-        "external_model_name",
-        "external_model_display_keys",
-        "reference_table",
-        "is_controled",
-        "admin",
-        "datatype",
-        "format",
-        "constraint",
-    )
-    @classmethod
-    def validate_all_fields_one_by_one(cls, field_value):
-        # Do the validation instead of printing
-        print(f"{cls}: Field value {field_value}")
-        return field_value  # this is the value written to the class field
+    # @validator(
+    #     "search",
+    #     "filter",
+    #     "external_model_name",
+    #     "external_model_display_keys",
+    #     "reference_table",
+    #     "is_controled",
+    #     "admin",
+    #     "datatype",
+    #     "format",
+    #     "constraint"
+    # )
+    # @classmethod
+    # def validate_all_fields_one_by_one(cls, field_value):
+    #     # Do the validation instead of printing
+    #     print(f"{cls}: Field value {field_value}")
+    #     return field_value  # this is the value written to the class field
 
     @validator("search")
     def check_search_option(cls, field_value, values):
@@ -196,42 +206,44 @@ class Rule(BaseModel):
         return field_value
     
     @validator("filter")
-    def check_filter_option(cls, field_value, values):
-        print("Filter", cls, field_value, values)
+    def check_filter_option(cls, filter, values):
         datatype = values["datatype"]
-        if field_value:
-            if datatype not in ["date", "integer", "boolean"]:
-                raise ValueError(
-                    f"{cls} can't be filtered. Set filter option to False"
-                )
-                # return False
-        return field_value
+        is_reference = values["external_model_name"] == "reference"
+        if filter:
+            if is_reference is False:    
+                if datatype not in ["date", "integer", "boolean"]: 
+                    raise ValueError(
+                        f"{cls} can't be filtered. Set filter option to False"
+                    )    
+        return filter
 
-    # @validator("external_model_name")
+    # @validator("external_model_name", "external_model_display_keys")
     # def check_external_model(cls, field_value, values):
-    #     print("External_model", cls, field_value, values)
-    #     if field_value is not None:
-    #         print("V", values.keys())
+    #     print(values)
+    #     if field_value not in ["", "reference"]:
     #         external_model_display_keys = values["external_model_display_keys"]
-    #         if external_model_display_keys is None or len(external_model_display_keys) == 0:
-    #             raise ValueError("{field_value} is an external model. Specify display options")
-    #         return field_value
+    #         print(external_model_display_keys)
+    #     # if field_value is not None:
+    #     #     if external_model_display_keys is None or len(external_model_display_keys) == 0:
+    #     #         raise ValueError("{field_value} is an external model. Specify display options")
+    #     #     return field_value
     #     return field_value
     
     @validator("reference_table")
     def check_reference(cls, reference_table, values):
         is_controled = values["is_controled"]
-        if reference_table is not None:
+        if reference_table is not None and is_controled is False:
             raise ValueError(f"{reference_table} is set. Set is_controled to True")
         else:
-            return is_controled
+            return reference_table
+
     @validator("admin")
     def check_admin(cls, admin, values):
         field = values["field"]
         admin = values["is_controled"]
         if admin == -1:
              raise ValueError(f"{field} MUST be display in admin")
-    
+         
     def build_model_property(self, lang):
         py_type = self.convert()
 
