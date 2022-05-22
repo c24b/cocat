@@ -156,6 +156,7 @@ class Rule(BaseModel):
             "integer",
             "object",
             "date",
+            "datetime"
             "integer",
             "boolean",
         ]
