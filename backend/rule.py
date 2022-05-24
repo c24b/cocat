@@ -77,9 +77,10 @@ class Rule(BaseModel):
 
     def _export(self, to="csv"):
         if to == "csv":
-            rules_meta = self.__dict__.items()
-            header = ",".join(rules_meta.keys())
-            values = "\n".join([",".join(v) for v in rules_meta.values()])
+            header = list(self.__dict__.keys())
+            print(header)
+            header = ",".join([k for k in self.__dict__.keys()])
+            values = "\n".join([",".join(v) for v in self.__dict__.values()])
             csv_str = "\n".join([header]+ values) 
             return csv_str
         elif to == "json":
@@ -124,6 +125,8 @@ class Rule(BaseModel):
             if self.datatype == "string":
                 return str(value)
             elif self.datatype == "date":
+                return datetime.datetime.strftime(value, self.format)
+            elif self.datatype == "datetime":
                 return datetime.datetime.strftime(value, self.format)
             else:
                 return str
