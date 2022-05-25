@@ -5,6 +5,8 @@ parameters to build model
 """
 
 import datetime
+import json
+import dicttoxml
 from typing import Optional
 from pydantic import BaseModel, ValidationError, validator
 
@@ -31,14 +33,25 @@ class RuleSetter:
             self.rules.append(Rule(**i))
 
 class Rule(BaseModel):
-    """class to  generate, control and check model:
-    a rule defines one property of a data model:
-    its name, description, example default value
-    the model it belongs to and then:
-    - display options
-    - validation options
-    indexation options
-    import/export options
+    """
+    A class to represent a Rule
+
+    ...
+
+    Attributes
+    ----------
+    name : str
+        first name of the person
+    surname : str
+        family name of the person
+    age : int
+        age of the person
+
+    Methods
+    -------
+    info(additional=""):
+        Prints the person's name and age.
+    
     """
     issue_date : str = None
     model: str = None
@@ -76,15 +89,33 @@ class Rule(BaseModel):
     comment: str = None
 
     def _export(self, to="csv"):
+        """Export.
+        
+        Args:
+            to(str): the export format 
+        """
+        accepted_formats = ["csv", "json", "xml", "schema_json", "pydantic", "dcat", "inspire"]
+        accepted_formats_str = ",".join(accepted_formats)
+        if not to in accepted_formats:
+
+            raise ValueError(f"{to} not in {accepted_formats_str}") 
+        rule_d = dict(self.__dict__.items())
         if to == "csv":
-            header = list(self.__dict__.keys())
-            print(header)
-            header = ",".join([k for k in self.__dict__.keys()])
-            values = "\n".join([",".join(v) for v in self.__dict__.values()])
-            csv_str = "\n".join([header]+ values) 
-            return csv_str
-        elif to == "json":
-            self.schema_json(indent=2)
+            header = ",".join(list(rule_d.keys()))
+            values = ",".join(list([str(n) for n in rule_d.values()]))
+            return "\n".join([header, values])
+        elif to== "json":
+            return json.dumps(rule_d)
+        elif to == "schema_json":
+            return self.schema_json(indent=2)
+        elif to == "xml":
+            return dicttoxml.dicttoxml(rule_d)
+        elif to =="pydantic":
+            datatype = self._convert("model")
+            if self.required:
+                return f"{self.field}: {datatype} = {self.default_en}"
+            else:
+                return f"{self.field}: Optional[{datatype}] = {self.default_en}"
         
     def _convert(self, to="pydantic_str", value=None):
         if to == "model":
@@ -158,7 +189,6 @@ class Rule(BaseModel):
     
     @validator("external_model_display_keys", pre=True)
     def parse_external_model_display_keys(cls, value):
-        print(value.split("|"))
         return value.split("|")
 
     @validator("datatype")
@@ -197,14 +227,13 @@ class Rule(BaseModel):
 
     @validator("search")
     def check_search_option(cls, field_value, values):
-        print("Search", cls, field_value, values)
+        # print("Search", cls, field_value, values)
         datatype = values["datatype"]
         if field_value:
             if datatype not in ["string"]:
-                yield ValueError(
+                raise ValueError(
                     f"{cls} can't be index in full text. Set search option to False"
                 )
-                return False
                 
         return field_value
     
@@ -220,17 +249,16 @@ class Rule(BaseModel):
                     )    
         return filter
 
-    # @validator("external_model_name", "external_model_display_keys")
-    # def check_external_model(cls, field_value, values):
-    #     print(values)
-    #     if field_value not in ["", "reference"]:
-    #         external_model_display_keys = values["external_model_display_keys"]
-    #         print(external_model_display_keys)
-    #     # if field_value is not None:
-    #     #     if external_model_display_keys is None or len(external_model_display_keys) == 0:
-    #     #         raise ValueError("{field_value} is an external model. Specify display options")
-    #     #     return field_value
-    #     return field_value
+    @validator("external_model_name")
+    def check_external_model(cls, field_value, values):
+        if field_value not in ["", "reference"]:
+            external_model_display_keys = values["external_model_display_keys"]
+            print(external_model_display_keys)
+        # if field_value is not None:
+        #     if external_model_display_keys is None or len(external_model_display_keys) == 0:
+        #         raise ValueError("{field_value} is an external model. Specify display options")
+        #     return field_value
+        return field_value
     
     @validator("reference_table")
     def check_reference(cls, reference_table, values):
