@@ -208,6 +208,44 @@ class Rule(BaseModel):
             return dict
         if self.datatype == "boolean":
             return bool
+    
+
+    def get_index_properties(self, lang):
+        """prepare for mapping """
+        if lang == "fr":
+            analyzer = "std_french"
+        else:
+            analyzer = "std_english"
+        if self.search or self.filter:
+            if self.external_model_name == "reference":
+                return {"type": "text", "fields": {"raw": {"type": "keyword"}}, "analyzer": analyzer}
+            if self.external_model_name is not None:
+                return {"type": "nested"}
+            if self.datatype == "string":
+                return {"type": "text", "fields": {"raw": {"type": "keyword"}}, "analyzer": analyzer}
+            if self.datatype == "date":
+                if self.constraint == "range":
+                    return {"type": "integer_date"}
+                    
+                else:
+                    return {"type": "date", "format": "yyyy-MM-dd||yyyy/MM/dd"}
+            
+            if self.datatype == "datetime":
+                if self.constraint == "range":
+                    return {"type": "integer_date"}
+                else:
+                    return {"type": "date", "format": "yyyy-MM-dd HH:mm:ss||strict_date_optional_time_nanos"}
+            if self.datatype == "boolean":
+                return {"type": self.datatype}
+                
+            if self.datatype == "integer":
+                if self.constraint == "range":
+                    return {"type": "integer_range"}
+                else:
+                    return {"type": self.datatype}
+            else:
+                return {"type": "text", "fields": {"raw": {"type": "keyword"}}, "analyzer": analyzer}
+
     def build_model_property(self, lang):
         """Build Dataclass field line for pydantic model"""
         py_type = self.datatype_to_pytype().__name__
@@ -224,12 +262,17 @@ class Rule(BaseModel):
                 line = f"{self.field}: List[{py_type}]"
             else:
                 line = f"{self.field}: {py_type}"
+        #not implemented yet
         # default = getattr(self, f"default_{lang}")
         # if default is not None or default != "":
         #     if self.multiple:
         #         line += f"= [{default}]"
         #     else:
         #         line += f"= {default}"
+        if self.multiple:
+            line += f"= []"
+        else:
+            line += f"= None"
         return line
 
     def get_display_options_by_lang(self, lang):
