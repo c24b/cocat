@@ -57,11 +57,11 @@ class Model(object):
             self.index_fields = self.search_fields + self.filter_fields
             self.index_mapping = {
                 "fr": {
-                    "properties":{r.field: r.get_index_properties("fr") for r in self.rules}
+                    "properties":{r.field: r.get_index_properties("fr") for r in self.rules if r.field in self.index_fields}
                     
                 },
                 "en": {
-                    "properties":{r.field: r.get_index_properties("en") for r in self.rules}
+                    "properties":{r.field: r.get_index_properties("en") for r in self.rules if r.field in self.index_fields}
                 }
             }
 
