@@ -11,20 +11,7 @@ import dicttoxml
 from typing import Optional
 from pydantic import BaseModel, validator
 
-def datatype_to_pytype(datatype):
-    '''cast declared datatype (javascript notation) into native python type'''
-    if datatype == "date":
-        return datetime.date
-    if datatype == "datetime":
-        return datetime.datetime
-    if datatype == "string":
-        return str
-    if datatype == "integer":
-        return int
-    if datatype == "object":
-        return dict
-    if datatype == "boolean":
-        return bool
+
 
 def cast_to_pytype(value, datatype):
     '''cast value with declared datatype (javascript notation) into native python type'''
@@ -207,20 +194,42 @@ class Rule(BaseModel):
                 )
         return filter
     
+    def datatype_to_pytype(self):
+        '''cast declared datatype (javascript notation) into native python type'''
+        if self.datatype == "date":
+            return datetime.date
+        if self.datatype == "datetime":
+            return datetime.datetime
+        if self.datatype == "string":
+            return str
+        if self.datatype == "integer":
+            return int
+        if self.datatype == "object":
+            return dict
+        if self.datatype == "boolean":
+            return bool
     def build_model_property(self, lang):
         """Build Dataclass field line for pydantic model"""
-        py_type = self.convert()
+        py_type = self.datatype_to_pytype().__name__
+        if py_type == "dict" and self.external_model_name is not None:
+            py_type  = self.external_model_name.title()
         if not self.required:
             line = f"{self.field}: Optional"
-            if self.is_multiple:
+            if self.multiple:
                 line += f"[List[{py_type}]]"
             else:
-                line += f"[List[{py_type}]]"
+                line += f"[{py_type}]"
         else:
-            line = f"{self.field}:{py_type}"
-        default = getattr(self, f"default_{lang}")
-        if default != "":
-            line += f"= {default}"
+            if self.multiple:
+                line = f"{self.field}: List[{py_type}]"
+            else:
+                line = f"{self.field}: {py_type}"
+        # default = getattr(self, f"default_{lang}")
+        # if default is not None or default != "":
+        #     if self.multiple:
+        #         line += f"= [{default}]"
+        #     else:
+        #         line += f"= {default}"
         return line
 
     def get_display_options_by_lang(self, lang):
@@ -313,9 +322,11 @@ class Rule(BaseModel):
         elif to == "pydantic":
             datatype = self._convert("model")
             if self.required:
-                return f"{self.field}: {datatype} = {self.default_en}"
+                # return f"{self.field}: {datatype} = {self.default_en}"
+                return f"{self.field}: {datatype}"
             else:
-                return f"{self.field}: Optional[{datatype}] = {self.default_en}"
+                # return f"{self.field}: Optional[{datatype}] = {self.default_en}"
+                return f"{self.field}: Optional[{datatype}]"
 
     def _convert(self, to="pydantic_str", value=None):
         if to == "model":
@@ -351,7 +362,7 @@ class Rule(BaseModel):
             else:
                 return str(value)
         elif to == "csv":
-            if self.is_multiple:
+            if self.multiple:
                 value = value.split("|")
             if self.datatype == "string":
                 return str(value)
@@ -369,7 +380,7 @@ class Rule(BaseModel):
         elif to == "inspire":
             return f"<{self.inspire}>{value}</{self.vocab}>"
         elif to == "dict":
-            if self.is_multiple:
+            if self.multiple:
                 # if self.is_controled:
                 #     if self.constraint == "oneof":
                 return {self.field: value.split("|")}

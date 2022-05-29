@@ -12,7 +12,7 @@ class Model(object):
 
     """
 
-    def __init__(self, name:str, rules:list, lang: constr(regex="^(fr|en)$")= "fr")):
+    def __init__(self, name:str, rules:list, lang: constr(regex="^(fr|en)$")= "fr"):
         self.name = name
         self.rules = [r for r in rules if r.model == self.name]
         self.lang = lang
@@ -65,15 +65,15 @@ class Model(object):
         # setattr(self, f"rules_{self.lang}", {})
         for r in self.rules:
             self.rules_by_lang[r.field] = r.get_by_lang(self.lang)        
-        
+
     def build_model(self):
         """"generate properties for a pydantic model where model = "dataset" >>> Dataset(Model)"""
+        self.model_name = f"class {self.name.title()}(BaseModel)"
         self.model_properties = []
         for r in self.rules:
-            if self.is_multilang:
-                self.model_properties.append(r.build_model_property(self.lang))
+            self.model_properties.append(r.build_model_property(self.lang))
 
-        pass
+        
     def build_doc_model(self):
         pass
     def build_filter_model(self):

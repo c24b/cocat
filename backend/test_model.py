@@ -64,3 +64,13 @@ def test_model_init_000():
         "ref_update_frequency",
         "ref_spatial_granularity",
     ], m.reference_tables
+
+def test_model_build_001():
+    """test building a pydantic model"""
+    raw = CSVRuleImporter("./rules.csv")
+    m = Model("dataset", raw.rules)
+    m.build_model()
+    assert m.model_name == "class Dataset(BaseModel)"
+    assert len(m.model_properties) == 27, len(m.model_properties)
+    assert m.model_properties == [], m.model_properties
+
