@@ -111,6 +111,7 @@ def test_rule_reference_003():
     assert r.reference_table == "ref_tags"
     assert r.external_model_name == "reference"
     assert r.external_model_display_keys == ["name"]
+    assert r.get_field_by_lang("fr") == "tags", r.get_field_by_lang("fr")
 # def test_rule_validation_error_004():
 #     rule_d_0 = {
 #         "field": "title",

@@ -13,34 +13,91 @@ from pydantic import BaseModel, validator
 
 
 
-def cast_to_pytype(value, datatype):
-    '''cast value with declared datatype (javascript notation) into native python type'''
-    try:
-        return datatype_to_pytype(datatype)(value)
-    except TypeError as e:
-        print(e)
-        return value
-    except Exception as e:
-        print(e)
-        return value
+# def cast_to_pytype(value, datatype):
+#     '''cast value with declared datatype (javascript notation) into native python type'''
+#     try:
+#         return datatype_to_pytype(datatype)(value)
+#     except TypeError as e:
+#         print(e)
+#         return value
+#     except Exception as e:
+#         print(e)
+#         return value
 
 class Rule(BaseModel):
     """
     A class to represent a Rule
 
-    ...
-
+    
     Attributes
     ----------
     field: str
         name of the field
     name_fr : str
-       Display  name of the field
-
+        name of the field as displayed
+    issue_date: datetime.date 
+        date of creation YYYY-MM-dd
+    model: str
+        name of the model
+    external_model_name: Optional[str]
+        name of the model the field is a reference to 
+    external_model_display_keys: Optional[list]
+        list of the foreign key for the external model
+    reference_table: Optional[str]
+        name of the reference table that stores all the possible values  
+    vocab: Optional[str]
+        string representation of the xml label of external vocabulary
+    inspire: Optional[str]
+        string representation of the inspire label
+    translation: bool = False
+        translate the value of the field if missing in other lang
+    multiple: bool = None
+        field accepts n values  
+    datatype: str = "string"
+        type notation of the field using javascript notation. 
+        accepted_datatypes = ["string","integer","object","date","datetime","integer","boolean"]
+        that determines the type property of the model for the validation, the insertion and the indexation
+    format: Optional[str]
+        additionnal information for the type such as expected date format or specific string representation (email, url...)
+    constraint: Optional[str]
+        string representation of a constraint for json model or database check
+    search: bool
+        define if the field is indexed in full text and available in search engine
+    filter: bool
+        define if the field is available to filter options
+    required: bool
+        define if the field is mandatory 
+    admin_display_order: int
+        display the field in admin interface
+    list_display_order: int
+        display the field in the list of model
+    item_display_order: int = -1 
+        display the field in the detailled card level
+    name_fr: str
+        name as displayed in the french interface
+    name_en: Optional[str] = ""
+        name as displayed in the english interface
+    description_fr: Optional[str] = ""
+        description of the field as displayed in the french interface: more informations
+    description_en: Optional[str] = ""
+        description of the field as displayed in the english interface: more informations
+    example_fr: Optional[str] = None
+        example value in french
+    example_en: Optional[str] = None
+        example value in english
+    default_fr: Optional[str] = None
+        default value in french can be used as help text or template during insertion
+    default_en: Optional[str] = None
+        default value in english can be used as help text or template during insertion
+    comment: Optional[str] = None
+        a comment on the status of the field 
     Methods
     -------
+    get_index_property() 
+    get_model_property()
+    get_display_options_by_lang()
+    get_display_option()
     
-
     """
     issue_date: datetime.date = datetime.date.today()
     model: str
@@ -71,6 +128,12 @@ class Rule(BaseModel):
     default_en: Optional[str] = None
     comment: Optional[str] = None
 
+    @validator("field", "external_model_name", "external_model_display_keys", "reference_table","format", "constraint", "vocab", "inspire", pre=True)
+    def strip(cls, value):
+        if isinstance(value, list):
+            return [v.strip() for v in value]
+        return value.strip()
+    
     @validator("external_model_name", "external_model_display_keys", "reference_table","format", "constraint", "vocab", "inspire", pre=True, allow_reuse=True)
     def if_empty_set_to_none(cls, value):
         """set empty string to None """
@@ -91,7 +154,6 @@ class Rule(BaseModel):
     @validator("admin_display_order", "list_display_order", "item_display_order", pre=True)
     def cast_2_int(cls, value):
         return int(value)
-    
     
     @validator("external_model_display_keys", pre=True)
     def parse_external_model_display_keys(cls, value, values):
@@ -126,7 +188,6 @@ class Rule(BaseModel):
                 return "reference"
         return value
     
-
     @validator("external_model_name")
     def check_external_model(cls, value, values, **kwargs):
         field = values["field"]
@@ -209,9 +270,8 @@ class Rule(BaseModel):
         if self.datatype == "boolean":
             return bool
     
-
-    def get_index_properties(self, lang):
-        """prepare for mapping """
+    def get_index_property(self, lang):
+        """return index and mapping properties"""
         if lang == "fr":
             analyzer = "std_french"
         else:
@@ -246,7 +306,7 @@ class Rule(BaseModel):
             else:
                 return {"type": "text", "fields": {"raw": {"type": "keyword"}}, "analyzer": analyzer}
 
-    def build_model_property(self, lang):
+    def get_model_property(self, lang):
         """Build Dataclass field line for pydantic model"""
         py_type = self.datatype_to_pytype().__name__
         if py_type == "dict" and self.external_model_name is not None:
@@ -293,7 +353,7 @@ class Rule(BaseModel):
 
     def build_example_by_lang(self, lang):
         """
-        Automatically build the field with the example: {"field": "example"} 
+        Build the example : {"field": "example"} 
         in the corresponding language"""
         if lang not in ["fr", "en"]:
             raise ValueError(f"Language {lang} is not supported.")
@@ -301,12 +361,13 @@ class Rule(BaseModel):
 
     def build_example(self):
         """
-        Automatically build the field with the example: {"field": {"fr": "example_fr", "en": "example_en"}} 
+        Build the example : {"field": {"fr": "example_fr", "en": "example_en"}} 
         """
         return {self.field: {"fr": self.example_fr, "en": self.example_en}}
+    
     def build_default_by_lang(self, lang):
         """
-        Automatically build the field with the example: {"field": "example"} 
+        Build the example for model: {"field": "example"} 
         in the corresponding language"""
         if lang not in ["fr", "en"]:
             raise ValueError(f"Language {lang} is not supported.")
@@ -318,18 +379,15 @@ class Rule(BaseModel):
         """
         return {self.field: {"fr": self.default_fr, "en": self.default_en}}
     
-    def get_by_lang(self, lang):
-        """Set the rule in the corresponding language"""
+    def get_field_by_lang(self, lang):
+        """Set the field in the corresponding language"""
         if lang not in ["fr", "en"]:
             raise ValueError(f"Language {lang} is not supported.")
-        dict_by_lang = {}
-        for k, v in self.__dict__.items():
-            if k.endswith(lang):
-                dict_by_lang[k.split("_")[0]] = v
-            else:
-                dict_by_lang[k] = v
-        setattr(self, f"_{lang}", dict_by_lang)
-
+        if self.field.endswith(lang):
+            return self.field.split("_")[0]
+        else:
+            return self.field
+        
     def _export(self, to="csv"):
         """Export.
 

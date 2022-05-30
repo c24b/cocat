@@ -8,52 +8,51 @@ def test_model_filter_000():
     assert type(rules[0]) == Rule, type(rules[0])
     m = Model("dataset", rules)
     assert m.name == "dataset", m.name
+    m.get_filter_properties()
     assert m.has_filter is True
     assert m.filters == {
-        "accrual_periodicity": {
-            "datatype": "string",
-            "external_model": "reference",
-            "reference": "ref_accrual_periodicity",
-        },
-        "has_georeference_dimension": {
-            "datatype": "boolean",
-            "external_model": None,
-            "reference": None,
-        },
-        "is_open_data": {
-            "datatype": "boolean",
-            "external_model": None,
-            "reference": None,
-        },
-        "license ": {
-            "datatype": "string",
-            "external_model": "reference",
-            "reference": "ref_license",
-        },
-        "media_type": {
-            "datatype": "string",
-            "external_model": "reference",
-            "reference": "ref_media_type",
-        },
-        "millesime": {"datatype": "integer", "external_model": None, "reference": None},
-        "organizations": {
-            "datatype": "object",
-            "external_model": "organization",
-            "reference": None,
-        },
-        "spatial_granularity": {
-            "datatype": "string",
-            "external_model": "reference",
-            "reference": "ref_spatial_granularity",
-        },
-        "temporal": {"datatype": "integer", "external_model": None, "reference": None},
-        "update_frequency": {
-            "datatype": "string",
-            "external_model": "reference",
-            "reference": "ref_update_frequency",
-        },
-    }, m.filters
-    assert m.reference_tables == [
+    'accrual_periodicity': {'datatype': 'string',
+                            'external_model': 'reference',
+                            'multiple': True,
+                            'reference': 'ref_accrual_periodicity'},
+    'has_georeference_dimension': {'datatype': 'boolean',
+                                    'external_model': None,
+                                    'multiple': False,
+                                    'reference': None},
+    'is_open_data': {'datatype': 'boolean',
+                    'external_model': None,
+                    'multiple': False,
+                    'reference': None},
+    'license': {'datatype': 'string',
+                'external_model': 'reference',
+                'multiple': False,
+                'reference': 'ref_license'},
+    'media_type': {'datatype': 'string',
+                    'external_model': 'reference',
+                    'multiple': True,
+                    'reference': 'ref_media_type'},
+    'millesime': {'datatype': 'integer',
+                'external_model': None,
+                'multiple': True,
+                'reference': None},
+    'organizations': {'datatype': 'object',
+                    'external_model': 'organization',
+                    'multiple': True,
+                    'reference': None},
+    'spatial_granularity': {'datatype': 'string',
+                            'external_model': 'reference',
+                            'multiple': False,
+                            'reference': 'ref_spatial_granularity'},
+    'temporal': {'datatype': 'integer',
+                'external_model': None,
+                'multiple': False,
+                'reference': None},
+    'update_frequency': {'datatype': 'string',
+                        'external_model': 'reference',
+                        'multiple': False,
+                        'reference': 'ref_update_frequency'},
+}, m.filters
+    assert sorted(m.reference_tables) == sorted([
         "ref_environment_detail",
         "ref_expositure_medium",
         "ref_env_agent_type",
@@ -63,7 +62,7 @@ def test_model_filter_000():
         "ref_accrual_periodicity",
         "ref_update_frequency",
         "ref_spatial_granularity",
-    ], m.reference_tables
+    ]), m.reference_tables
 
 def test_model_index_001():
     raw = CSVRuleImporter("./rules.csv")
@@ -74,7 +73,8 @@ def test_model_index_001():
     m.get_index_properties()
     assert m.has_filter is True
     assert m.is_searchable is True
-    assert m.index_mapping == {"fr": "", "en": ""}, m.index_mapping
+    assert sorted(list(m.index_mapping["en"]["properties"].keys())) == sorted(m.search_fields + m.filter_fields), m.index_mapping["en"]["properties"].keys()
+
 def test_model_build_002():
     """test building model properties"""
     raw = CSVRuleImporter("./rules.csv")
@@ -100,7 +100,7 @@ def test_model_build_002():
         'download_url: Optional[List[str]]= []',
         'contact_point: str= None',
         'is_open_data: Optional[bool]= None',
-        'license : str= None',
+        'license: str= None',
         'media_type: Optional[List[str]]= []',
         'temporal: int= None',
         'millesime: Optional[List[int]]= []',
