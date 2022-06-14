@@ -29,10 +29,10 @@ class Model(object):
         self.get_index_properties()
         self.get_references()
         self.get_external_models()
-        
+
     def get_filter_properties(self):
         """set filters and has_filter with  type of each filter"""
-        self.filters =  {
+        self.filters = {
             r.field: {
                 "datatype": r.datatype,
                 "external_model": r.external_model_name,
@@ -67,12 +67,19 @@ class Model(object):
             self.index_fields = self.search_fields + self.filter_fields
             self.index_mapping = {
                 "fr": {
-                    "properties":{r.field: r.get_index_property("fr") for r in self.rules if r.field in self.index_fields}
-                    
+                    "properties": {
+                        r.field: r.get_index_property("fr")
+                        for r in self.rules
+                        if r.field in self.index_fields
+                    }
                 },
                 "en": {
-                    "properties":{r.field: r.get_index_property("en") for r in self.rules if r.field in self.index_fields}
-                }
+                    "properties": {
+                        r.field: r.get_index_property("en")
+                        for r in self.rules
+                        if r.field in self.index_fields
+                    }
+                },
             }
 
     def is_multilang(self) -> bool:
@@ -81,7 +88,9 @@ class Model(object):
 
     def get_external_models(self):
         """get [("field","external_model")"""
-        self.has_external_models = any([r.external_model_name not in [None, "reference"] for r in self.rules])
+        self.has_external_models = any(
+            [r.external_model_name not in [None, "reference"] for r in self.rules]
+        )
         self.external_models = list(
             set(
                 r.external_model_name
@@ -93,9 +102,11 @@ class Model(object):
 
     def get_references(self):
         self.has_references = any([r.reference_table is not None for r in self.rules])
-        self.reference_tables = list(set([r.reference_table
-                    for r in self.rules
-                    if r.reference_table is not None]))
+        self.reference_tables = list(
+            set(
+                [r.reference_table for r in self.rules if r.reference_table is not None]
+            )
+        )
         self.references = list(
             set(
                 [
@@ -112,8 +123,7 @@ class Model(object):
             # self.rules_by_lang = {}
             # setattr(self, f"rules_{self.lang}", {})
             return [r.get_by_lang(self.lang) for r in self.rules]
-            
-    
+
     def build_model(self):
         """ "generate properties for a pydantic model where model = "dataset" >>> Dataset(Model)"""
         self.model_name = f"class {self.name.title()}(BaseModel)"
@@ -129,7 +139,6 @@ class Model(object):
         if self.has_filter:
             pass
 
-    
     def build_example(self):
         pass
 

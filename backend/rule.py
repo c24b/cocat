@@ -7,10 +7,9 @@ parameters to build model
 import datetime
 import json
 from csv import DictReader
-import dicttoxml
+# import dicttoxml
 from typing import Optional
 from pydantic import BaseModel, validator
-
 
 
 # def cast_to_pytype(value, datatype):
@@ -24,27 +23,28 @@ from pydantic import BaseModel, validator
 #         print(e)
 #         return value
 
+
 class Rule(BaseModel):
     """
     A class to represent a Rule
 
-    
+
     Attributes
     ----------
     field: str
         name of the field
     name_fr : str
         name of the field as displayed
-    issue_date: datetime.date 
+    issue_date: datetime.date
         date of creation YYYY-MM-dd
     model: str
         name of the model
     external_model_name: Optional[str]
-        name of the model the field is a reference to 
+        name of the model the field is a reference to
     external_model_display_keys: Optional[list]
         list of the foreign key for the external model
     reference_table: Optional[str]
-        name of the reference table that stores all the possible values  
+        name of the reference table that stores all the possible values
     vocab: Optional[str]
         string representation of the xml label of external vocabulary
     inspire: Optional[str]
@@ -52,9 +52,9 @@ class Rule(BaseModel):
     translation: bool = False
         translate the value of the field if missing in other lang
     multiple: bool = None
-        field accepts n values  
+        field accepts n values
     datatype: str = "string"
-        type notation of the field using javascript notation. 
+        type notation of the field using javascript notation.
         accepted_datatypes = ["string","integer","object","date","datetime","integer","boolean"]
         that determines the type property of the model for the validation, the insertion and the indexation
     format: Optional[str]
@@ -66,12 +66,12 @@ class Rule(BaseModel):
     filter: bool
         define if the field is available to filter options
     required: bool
-        define if the field is mandatory 
+        define if the field is mandatory
     admin_display_order: int
         display the field in admin interface
     list_display_order: int
         display the field in the list of model
-    item_display_order: int = -1 
+    item_display_order: int = -1
         display the field in the detailled card level
     name_fr: str
         name as displayed in the french interface
@@ -90,15 +90,16 @@ class Rule(BaseModel):
     default_en: Optional[str] = None
         default value in english can be used as help text or template during insertion
     comment: Optional[str] = None
-        a comment on the status of the field 
+        a comment on the status of the field
     Methods
     -------
-    get_index_property() 
+    get_index_property()
     get_model_property()
     get_display_options_by_lang()
     get_display_option()
-    
+
     """
+
     issue_date: datetime.date = datetime.date.today()
     model: str
     field: str
@@ -116,8 +117,8 @@ class Rule(BaseModel):
     filter: bool = False
     required: bool = True
     admin_display_order: int = 1
-    list_display_order: int = -1 
-    item_display_order: int = -1 
+    list_display_order: int = -1
+    item_display_order: int = -1
     name_fr: str
     name_en: Optional[str] = ""
     description_fr: Optional[str] = ""
@@ -128,53 +129,85 @@ class Rule(BaseModel):
     default_en: Optional[str] = None
     comment: Optional[str] = None
 
-    @validator("field", "external_model_name", "external_model_display_keys", "reference_table","format", "constraint", "vocab", "inspire", pre=True)
+    @validator(
+        "field",
+        "external_model_name",
+        "external_model_display_keys",
+        "reference_table",
+        "format",
+        "constraint",
+        "vocab",
+        "inspire",
+        pre=True,
+    )
     def strip(cls, value):
         if isinstance(value, list):
             return [v.strip() for v in value]
         return value.strip()
-    
-    @validator("external_model_name", "external_model_display_keys", "reference_table","format", "constraint", "vocab", "inspire", pre=True, allow_reuse=True)
+
+    @validator(
+        "external_model_name",
+        "external_model_display_keys",
+        "reference_table",
+        "format",
+        "constraint",
+        "vocab",
+        "inspire",
+        pre=True,
+        allow_reuse=True,
+    )
     def if_empty_set_to_none(cls, value):
-        """set empty string to None """
+        """set empty string to None"""
         if value == "":
             return None
         else:
             return value
-    
-    @validator("search", "filter", "required", "multiple", "translation", pre=True, allow_reuse=True)
+
+    @validator(
+        "search",
+        "filter",
+        "required",
+        "multiple",
+        "translation",
+        pre=True,
+        allow_reuse=True,
+    )
     def cast_2_bool(cls, value):
-        """ set string representaton of bool into bool"""
+        """set string representaton of bool into bool"""
         if value in ["true", "True", 1]:
             return True
         if value in ["false", "False", 0]:
             return False
         return bool(value)
-    
-    @validator("admin_display_order", "list_display_order", "item_display_order", pre=True)
+
+    @validator(
+        "admin_display_order", "list_display_order", "item_display_order", pre=True
+    )
     def cast_2_int(cls, value):
         return int(value)
-    
+
     @validator("external_model_display_keys", pre=True)
     def parse_external_model_display_keys(cls, value, values):
         if value is not None:
             if values["external_model_name"] is None:
-                raise ValueError("As external_model keys are declared, external model should be specified")
+                raise ValueError(
+                    "As external_model keys are declared, external model should be specified"
+                )
             else:
                 return value.split("|")
         return value
-    
+
     # @validator("example_fr", "example_en", "default_fr", "default_en", pre=True)
     # def validate_datatype_example(cls, value, values):
     #     """cast example and default with the declared datatype"""
-        
+
     #     field = values["field"]
     #     datatype = values["datatype"]
     #     is_multiple = values["multiple"]
     #     if value is None:
     #         if is_multiple:
     #             return [None]
-    #         return value    
+    #         return value
     #     if is_multiple:
     #         return [cast_to_pytype(v, datatype) for v in value.split('|')]
     #     else:
@@ -187,17 +220,17 @@ class Rule(BaseModel):
             if ext_model is None:
                 return "reference"
         return value
-    
+
     @validator("external_model_name")
     def check_external_model(cls, value, values, **kwargs):
         field = values["field"]
-        if 'reference_table' in values:
+        if "reference_table" in values:
             reference_table = values["reference_table"]
-        
+
             if reference_table is not None and value is None:
                 return "reference"
         return value
-    
+
     @validator("external_model_display_keys")
     def check_external_model_keys(cls, value, values):
         field = values["field"]
@@ -215,7 +248,7 @@ class Rule(BaseModel):
         if value == 0 or value == -1:
             raise ValueError(f"{field} must be display set an order > 0")
         return value
-            
+
     @validator("datatype", pre=True, allow_reuse=True)
     def check_supported_datatype(cls, value):
         """check"""
@@ -243,20 +276,20 @@ class Rule(BaseModel):
                     f"{field} search option is set to {search}, it can't be index in full text: invalid {datatype}. Set search option to False"
                 )
         return search
-    
+
     @validator("filter")
     def check_filter_option(cls, filter, values):
         """field can be filter only if its not a free text"""
         field = values["field"]
         if filter:
-            if values["external_model_name"] is  None and values["datatype"] == "string":
+            if values["external_model_name"] is None and values["datatype"] == "string":
                 raise ValueError(
                     f"{field} can't be filtered as it consists of a free text: not a reference, not and external model or a type can be filter int, date, ..."
                 )
         return filter
-    
+
     def datatype_to_pytype(self):
-        '''cast declared datatype (javascript notation) into native python type'''
+        """cast declared datatype (javascript notation) into native python type"""
         if self.datatype == "date":
             return datetime.date
         if self.datatype == "datetime":
@@ -269,48 +302,63 @@ class Rule(BaseModel):
             return dict
         if self.datatype == "boolean":
             return bool
-    
+
     def get_index_property(self, lang):
-        """return index and mapping properties"""
+        """given type return mapping properties"""
         if lang == "fr":
             analyzer = "std_french"
         else:
             analyzer = "std_english"
         if self.search or self.filter:
             if self.external_model_name == "reference":
-                return {"type": "text", "fields": {"raw": {"type": "keyword"}}, "analyzer": analyzer}
+                return {
+                    "type": "text",
+                    "fields": {"raw": {"type": "keyword"}},
+                    "analyzer": analyzer,
+                }
             if self.external_model_name is not None:
                 return {"type": "nested"}
             if self.datatype == "string":
-                return {"type": "text", "fields": {"raw": {"type": "keyword"}}, "analyzer": analyzer}
+                return {
+                    "type": "text",
+                    "fields": {"raw": {"type": "keyword"}},
+                    "analyzer": analyzer,
+                }
             if self.datatype == "date":
                 if self.constraint == "range":
                     return {"type": "integer_date"}
-                    
+
                 else:
                     return {"type": "date", "format": "yyyy-MM-dd||yyyy/MM/dd"}
-            
+
             if self.datatype == "datetime":
                 if self.constraint == "range":
                     return {"type": "integer_date"}
                 else:
-                    return {"type": "date", "format": "yyyy-MM-dd HH:mm:ss||strict_date_optional_time_nanos"}
+                    return {
+                        "type": "date",
+                        "format": "yyyy-MM-dd HH:mm:ss||strict_date_optional_time_nanos",
+                    }
             if self.datatype == "boolean":
                 return {"type": self.datatype}
-                
+
             if self.datatype == "integer":
                 if self.constraint == "range":
                     return {"type": "integer_range"}
                 else:
                     return {"type": self.datatype}
             else:
-                return {"type": "text", "fields": {"raw": {"type": "keyword"}}, "analyzer": analyzer}
+                return {
+                    "type": "text",
+                    "fields": {"raw": {"type": "keyword"}},
+                    "analyzer": analyzer,
+                }
 
     def get_model_property(self, lang):
         """Build Dataclass field line for pydantic model"""
         py_type = self.datatype_to_pytype().__name__
         if py_type == "dict" and self.external_model_name is not None:
-            py_type  = self.external_model_name.title()
+            py_type = self.external_model_name.title()
         if not self.required:
             line = f"{self.field}: Optional"
             if self.multiple:
@@ -322,7 +370,7 @@ class Rule(BaseModel):
                 line = f"{self.field}: List[{py_type}]"
             else:
                 line = f"{self.field}: {py_type}"
-        #not implemented yet
+        # not implemented yet
         # default = getattr(self, f"default_{lang}")
         # if default is not None or default != "":
         #     if self.multiple:
@@ -353,7 +401,7 @@ class Rule(BaseModel):
 
     def build_example_by_lang(self, lang):
         """
-        Build the example : {"field": "example"} 
+        Build the example : {"field": "example"}
         in the corresponding language"""
         if lang not in ["fr", "en"]:
             raise ValueError(f"Language {lang} is not supported.")
@@ -361,13 +409,13 @@ class Rule(BaseModel):
 
     def build_example(self):
         """
-        Build the example : {"field": {"fr": "example_fr", "en": "example_en"}} 
+        Build the example : {"field": {"fr": "example_fr", "en": "example_en"}}
         """
         return {self.field: {"fr": self.example_fr, "en": self.example_en}}
-    
+
     def build_default_by_lang(self, lang):
         """
-        Build the example for model: {"field": "example"} 
+        Build the example for model: {"field": "example"}
         in the corresponding language"""
         if lang not in ["fr", "en"]:
             raise ValueError(f"Language {lang} is not supported.")
@@ -375,10 +423,10 @@ class Rule(BaseModel):
 
     def build_default(self):
         """
-        Automatically build the field with the example: {"field": {"fr": "example_fr", "en": "example_en"}} 
+        Automatically build the field with the example: {"field": {"fr": "example_fr", "en": "example_en"}}
         """
         return {self.field: {"fr": self.default_fr, "en": self.default_en}}
-    
+
     def get_field_by_lang(self, lang):
         """Set the field in the corresponding language"""
         if lang not in ["fr", "en"]:
@@ -387,7 +435,7 @@ class Rule(BaseModel):
             return self.field.split("_")[0]
         else:
             return self.field
-        
+
     def _export(self, to="csv"):
         """Export.
 
@@ -418,8 +466,8 @@ class Rule(BaseModel):
             return json.dumps(rule_d)
         elif to == "schema_json":
             return self.schema_json(indent=2)
-        elif to == "xml":
-            return dicttoxml.dicttoxml(rule_d)
+        # elif to == "xml":
+        #     return dicttoxml.dicttoxml(rule_d)
         elif to == "pydantic":
             datatype = self._convert("model")
             if self.required:

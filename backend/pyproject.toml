@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "ODynCAT"
+version = "0.1.1"
+description = "An Open Source Dynamic Agnostic Cataloging System"
+
+license = "MIT"
+
+authors = [
+    "<c24b> Constance de Quatrebarbes"
+]
+
+readme = "README.md"
+
+repository = "https://github.com/python-poetry/poetry"
+homepage = "https://github.com/python-poetry/poetry"
+
+keywords = ["packaging", "poetry"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.10"
+pydantic = {version = "^1.9.0", extras = ["email"]}
+dicttoxml = ">=1.7.4"
+black = "^22.3.0"
+beanie = "^1.11.2"
+flake8 = "^4.0.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^3.0"
+pytest-cov = "^2.4"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "src", "backend"
+]

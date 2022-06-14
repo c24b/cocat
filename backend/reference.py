@@ -3,14 +3,21 @@ Reference
 """
 import os
 from typing import Optional
-from pydantic import BaseModel, validator, constr 
+from pydantic import BaseModel, validator, constr
 from csv import DictReader
-from beanie import Document, Indexed, init_beanie
+
+# from beanie import Document, Indexed, init_beanie
+import logging
+from .db import DB, PyObjectId
+
+LOGGER = logging.getLogger(__name__)
+# from bson.objectid import ObjectId as BsonObjectId
+
 
 class Reference(BaseModel):
     """
     Reference
-    
+
     Attributes
     ----------
     table_name: str
@@ -32,46 +39,70 @@ class Reference(BaseModel):
     -------
     set_name()
     """
+
+    id: Optional[PyObjectId] = None
     table_name: str = None
     field: str = None
     file: Optional[str] = None
     name_en: Optional[str] = None
     name_fr: str = None
+    name: Optional[str] = None
     uri: Optional[str] = None
     slug: Optional[str] = None
-    name: str(Optional) = None
-    
+    lang: str = "fr"
+
     @property
     def field(self):
         return self.table_name.replace("ref_", "")
-        
-    def set_name(self, lang: constr(regex="^(fr|en)$") = "fr"):
-        self.name = self.name_en
-        if lang == "fr":
-            self.name = self.name_fr
-        else: 
-            self.name = self.name_en
-        return self.name
 
+    @property
+    def name(self, lang: constr(regex="^(fr|en)$") = "fr"):
+        if self.lang == "en":
+            return self.name_en
+        return self.name_fr
+
+    def add(self):
+        exists = self.get_by_name(self.name) 
+        if exists is not None:
+            LOGGER.warning(f"<Reference(name='{self.name}'> already exists.")
+            self.id = exists["_id"]
+            
+        else:    
+            self.id = DB.reference.insert_one(self.__dict__).inserted_id
+            return self.id
     
-
+    def delete(self):
+        exists = self.get_by_name(self.name) 
+        if exists is None:
+            LOGGER.warning(f"<Reference(name='{self.name}'> doesn't exist.")
+        else:
+            self.id = exists["_id"]
+            DB.reference.delete_one({"_id": self.id})
+            return self.id
+    
+    def get_by_id(self, id):
+        return DB.reference.find_one({"_id": id})
+    
+    def get_by_name(self, name):
+        return DB.reference.find_one({"$or":[{"name": name}, {"name_f": name}, {"name_en": name}]})
 
 class CSVReferenceImporter:
     """
     CSVReferenceImporter
-    
+
     Attributes
     ----------
     csv_file: str
         csv filepath
     references: list
         list of Reference
-    
+
 
     Methods
     -------
     set_references()
     """
+
     def __init__(self, csv_file):
         self.csv_file = csv_file
         self.references = []
@@ -85,3 +116,7 @@ class CSVReferenceImporter:
                 row["table_name"] = os.path.splitext(row["ref_file"])[0]
                 r = Reference.parse_obj(row)
                 self.references.append(r)
+
+    def insert_references(self):
+        for ref in self.references:
+            DB.references.insert(ref)

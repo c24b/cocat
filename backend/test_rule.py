@@ -73,6 +73,7 @@ def test_rule_validation_002():
     assert r.external_model_name is None
     assert r.external_model_display_keys is None
 
+
 def test_rule_reference_003():
     rule_d = {
         "field": "tags",
@@ -107,11 +108,13 @@ def test_rule_reference_003():
     assert rule_d["reference_table"] == "ref_tags"
     assert rule_d["external_model_name"] == "reference"
     r = Rule.parse_obj(rule_d)
-    assert r.reference_table is not None 
+    assert r.reference_table is not None
     assert r.reference_table == "ref_tags"
     assert r.external_model_name == "reference"
     assert r.external_model_display_keys == ["name"]
     assert r.get_field_by_lang("fr") == "tags", r.get_field_by_lang("fr")
+
+
 # def test_rule_validation_error_004():
 #     rule_d_0 = {
 #         "field": "title",
@@ -143,7 +146,7 @@ def test_rule_reference_003():
 #         "inspire": "",
 #         "comment": "",
 #     }
-    
+
 #     with pytest.raises(ValidationError) as excinfo:
 #         r = Rule.parse_obj(rule_d_0)
 #     error = str(excinfo.value).split("\n")
@@ -151,42 +154,41 @@ def test_rule_reference_003():
 #     # assert (error[0]) == "", error[0]
 
 # def test_validation_error_005():
-    # rule_d_1 = {
-    #     "field": "tags",
-    #     "model": "dataset",
-    #     "datatype": "string",
-    #     "format": "",
-    #     "constraint": "unique",
-    #     "reference_table": "ref_tags",
-    #     "external_model": "",
-    #     "external_model_display_keys": "name",
-    #     "required": "True",
-    #     "is_controled": "False",
-    #     "multiple": "True",
-    #     "translation": "True",
-    #     "search": "True",
-    #     "filter": "False",
-    #     "name_fr": "Mots clés",
-    #     "name_en": "",
-    #     "description_fr": "",
-    #     "description_en": "",
-    #     "default_fr": "",
-    #     "default_en": "",
-    #     "example_fr": "chlordécone|cancer",
-    #     "example_en": "",
-    #     "admin_display_order": "2",
-    #     "list_display_order": "2",
-    #     "item_display_order": "2",
-    #     "vocab": "dcat:themeTaxonomy",
-    #     "inspire": "",
-    #     "comment": "",
-    # }
+# rule_d_1 = {
+#     "field": "tags",
+#     "model": "dataset",
+#     "datatype": "string",
+#     "format": "",
+#     "constraint": "unique",
+#     "reference_table": "ref_tags",
+#     "external_model": "",
+#     "external_model_display_keys": "name",
+#     "required": "True",
+#     "is_controled": "False",
+#     "multiple": "True",
+#     "translation": "True",
+#     "search": "True",
+#     "filter": "False",
+#     "name_fr": "Mots clés",
+#     "name_en": "",
+#     "description_fr": "",
+#     "description_en": "",
+#     "default_fr": "",
+#     "default_en": "",
+#     "example_fr": "chlordécone|cancer",
+#     "example_en": "",
+#     "admin_display_order": "2",
+#     "list_display_order": "2",
+#     "item_display_order": "2",
+#     "vocab": "dcat:themeTaxonomy",
+#     "inspire": "",
+#     "comment": "",
+# }
 
-    # with pytest.raises(ValidationError) as excinfo:
-    #     r = Rule.parse_obj(rule_d_1)
+# with pytest.raises(ValidationError) as excinfo:
+#     r = Rule.parse_obj(rule_d_1)
 
-    # assert str(excinfo.value.split("\n")) == ["boo!"],excinfo.value.split("\n")
-
+# assert str(excinfo.value.split("\n")) == ["boo!"],excinfo.value.split("\n")
 
 
 # def test_csv_import_005():
@@ -200,9 +202,8 @@ def test_rule_reference_003():
 #             #     rule_d[k] = cast_type_from_str_to_python(v)
 #             r = Rule.parse_obj(rule_d)
 #             rules.append(r)
-            
 
 
-# def test_csv_import_008():
-#     c = CSVRuleImporter("./rules.csv")
-#     assert len(c.rules) == 52
+def test_csv_import_008():
+    c = CSVRuleImporter("rules.csv")
+    assert len(c.rules) == 52
