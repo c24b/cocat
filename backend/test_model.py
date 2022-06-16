@@ -8,9 +8,8 @@ def test_model_filter_000():
     assert type(rules[0]) == Rule, type(rules[0])
     m = Model("dataset", rules)
     assert m.name == "dataset", m.name
-    m.get_filter_properties()
     assert m.has_filter is True
-    assert m.filters == {
+    assert m.filter_properties == {
         "accrual_periodicity": {
             "datatype": "string",
             "external_model": "reference",
@@ -71,7 +70,7 @@ def test_model_filter_000():
             "multiple": False,
             "reference": "ref_update_frequency",
         },
-    }, m.filters
+    }, m.filter_properties
     assert sorted(m.reference_tables) == sorted(
         [
             "ref_environment_detail",
@@ -93,7 +92,6 @@ def test_model_index_001():
     assert type(rules[0]) == Rule, type(rules[0])
     m = Model("dataset", rules)
     assert m.name == "dataset", m.name
-    m.get_index_properties()
     assert m.has_filter is True
     assert m.is_searchable is True
     assert sorted(list(m.index_mapping["en"]["properties"].keys())) == sorted(
