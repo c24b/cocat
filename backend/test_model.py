@@ -1,7 +1,6 @@
 from .model import Model
 from .rule import Rule, CSVRuleImporter
 
-
 def test_model_filter_000():
     raw = CSVRuleImporter("./rules.csv")
     rules = raw.rules
@@ -141,3 +140,10 @@ def test_model_build_002():
 
 def test_model_external_models():
     pass
+
+def test_build_pyfile():
+    raw = CSVRuleImporter("./rules.csv")
+    m = Model("dataset", raw.rules)
+    m.build_model()
+    m.write_model()
+    

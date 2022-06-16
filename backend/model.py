@@ -2,8 +2,19 @@
 model
 
 """
+# from fileinput import filename
+import os
 import json
+from re import template
 from pydantic import constr
+from jinja2 import Environment, FileSystemLoader, select_autoescape, exceptions
+
+
+def load_template(template_name, template_dir="./templates/"):
+    '''load Jinja2 template'''
+    env = Environment(loader=FileSystemLoader(template_dir),
+                      autoescape=select_autoescape())
+    return env.get_template(template_name)
 
 
 class Model(object):
@@ -89,19 +100,21 @@ class Model(object):
     def get_external_models(self):
         """get [("field","external_model")"""
         self.has_external_models = any(
-            [r.external_model_name not in [None, "reference"] for r in self.rules]
+            [r.external_model_name not in [None, "reference"]
+                for r in self.rules]
         )
         self.external_models = list(
             set(
                 r.external_model_name
                 for r in self.rules
-                if r.external_model_name is not None
+                if r.external_model_name not in [None, "reference"]
             )
         )
         self.external_model_classes = [n.title() for n in self.external_models]
 
     def get_references(self):
-        self.has_references = any([r.reference_table is not None for r in self.rules])
+        self.has_references = any(
+            [r.reference_table is not None for r in self.rules])
         self.reference_tables = list(
             set(
                 [r.reference_table for r in self.rules if r.reference_table is not None]
@@ -124,12 +137,26 @@ class Model(object):
             # setattr(self, f"rules_{self.lang}", {})
             return [r.get_by_lang(self.lang) for r in self.rules]
 
-    def build_model(self):
-        """ "generate properties for a pydantic model where model = "dataset" >>> Dataset(Model)"""
-        self.model_name = f"class {self.name.title()}(BaseModel)"
-        self.model_properties = []
-        for r in self.rules:
-            self.model_properties.append(r.get_model_property(self.lang))
+    def build_model(self, model_type = None):
+        """ generate properties for a pydantic model 
+        if model_type is None:
+            where model = "dataset" >>> Dataset(Model)
+        else:
+            model_type == filter
+            where model = "dataset" >>> DatasetFilter(Model)
+            model_type == doc
+            where model = "dataset" >>> DatasetDoc(Model)
+        """
+        if model_type is None:
+            model_name = self.name.title()
+        else:
+            model_name = f"{self.name.title()}{model_type.title()}"
+        self.model_name = f"class {model_name}(BaseModel)"
+        self.model_properties = [r.get_model_property(self.lang) for r in self.rules]
+        if self.has_external_models:
+            self.import_external_models = [f"from apps.{model_name}.models import {model_name_class}" for model_name, model_name_class in zip(
+                self.external_models, self.external_model_classes)]
+        self.build_example()        
 
     def build_doc_model(self):
         if self.is_multilang:
@@ -140,8 +167,30 @@ class Model(object):
             pass
 
     def build_example(self):
-        pass
+        self.example = {}
+        for r in self.rules:
+            self.example.update(r.build_example_by_lang(self.lang))
+        return self.example
 
     def build_reference_values(self):
         if self.has_references:
             pass
+
+    def write_model(self):
+        """Generate the  FastAPI model python file"""
+        self.build_model()
+        self.build_example()
+        self.file = f"{self.name}-model.py"
+        template = load_template("Model.tpl")
+
+        with open(self.file, "w") as f:
+            py_file = template.render(
+                model_name=self.model_name,
+                model_properties=self.model_properties,
+                has_external_models = self.has_external_models,
+                external_models = self.import_external_models,
+                has_references = self.has_references,
+                references = self.references,   
+                example = self.example
+            )
+            f.write(py_file)

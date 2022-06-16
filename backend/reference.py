@@ -6,7 +6,7 @@ from typing import Optional
 from pydantic import BaseModel, validator, constr
 from csv import DictReader
 
-# from beanie import Document, Indexed, init_beanie
+from beanie import Document, Indexed, init_beanie
 import logging
 from .db import DB, PyObjectId
 
