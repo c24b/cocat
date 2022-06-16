@@ -203,6 +203,21 @@ def test_model_references():
 ('env_agent_type', 'ref_env_agent_type'),
 ('environment_detail', 'ref_environment_detail')]), m.references
 
+def test_is_multilang():
+    raw = CSVRuleImporter("./rules.csv")
+    m = Model("dataset", raw.rules)
+    assert m.is_multilang, [r.translation for r in m.rules]
+
+def test_is_searchable():
+    raw = CSVRuleImporter("./rules.csv")
+    m = Model("dataset", raw.rules)
+    assert m.is_searchable, [r.search for r in m.rules]
+
+def test_has_filter():
+    raw = CSVRuleImporter("./rules.csv")
+    m = Model("dataset", raw.rules)
+    assert m.has_filter, [r.filter for r in m.rules]
+
 def test_write_modelfiles():
     raw = CSVRuleImporter("./rules.csv")
     m = Model("dataset", raw.rules)

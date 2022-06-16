@@ -29,22 +29,29 @@ class Model(object):
         self.name = name
         self.rules = [r for r in rules if r.model == self.name]
         self.lang = lang
-        self.has_filter = None
-        self.is_searchable = None
-        self.to_index = None
-        self.has_references = None
-        self.has_external_models = None
-        self.types = [None]
-        if self.is_multilang():
-            self.types.append("multilang")
         
-        if self.get_filter_properties():
-            self.types.append("filter")
-        
-        self.get_search_properties()
-        self.get_index_properties()
+        if self.is_searchable:
+            self.get_search_properties()
+            self.get_index_properties()
         self.get_references()
         self.get_external_models()
+    
+    @property
+    def is_searchable(self):
+        return any([r.search for r in self.rules])
+    
+    @property
+    def has_filter(self):
+        return any([r.filter for r in self.rules])
+    
+    @property
+    def types(self):
+        types = [None]
+        if self.is_multilang:
+            types.append("multilang")
+        if self.get_filter_properties():
+            types.append("filter")
+        return types
 
     def get_filter_properties(self):
         """set filters and has_filter with  type of each filter"""
@@ -59,24 +66,22 @@ class Model(object):
             if r.filter
         }
         self.filter_fields = list(self.filters.keys())
-        self.has_filter = any([r.filter for r in self.rules])
+        
         return self
 
     def get_search_properties(self):
         """define if model is searchable"""
-        self.is_searchable = any([r.search for r in self.rules])
-        if self.is_searchable:
-            self.search_fields = [r.field for r in self.rules if r.search]
-        return self
+        self.search_fields = [r.field for r in self.rules if r.search]
+        return self.search_fields
 
     def get_index_properties(self):
         """get all the properties of the model that have to be indexed
         prepare mapping
         """
         self.to_index = False
-        if self.is_searchable is None:
+        if self.is_searchable:
             self.get_search_properties()
-        if self.has_filter is None:
+        if self.has_filter:
             self.get_filter_properties()
         if self.is_searchable or self.has_filter:
             self.to_index = True
@@ -97,10 +102,10 @@ class Model(object):
                     }
                 },
             }
-
+    @property
     def is_multilang(self) -> bool:
         """define is model is multilang"""
-        self.is_multilang = any([r.translation for r in self.rules])
+        return any([r.translation for r in self.rules])
 
     def get_external_models(self, type=None):
         """Given the model type get the external models linked in the model"""
