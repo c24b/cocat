@@ -30,7 +30,7 @@ def check_multiple_values_in_set(cls, v, values, field):
             raise ValueError(f"{field.name} must be one of [{accepted_values}]")
     return v
 {%endif%}
-{{model_name}}
+class {{model_name}}(BaseModel)
     {%for value in model_properties %}{{value}}
     {%endfor%}{%if has_references%}{% for reference in references %}_value_in_set = validator('{{reference[1]}}', allow_reuse=True){% if not reference[0] %}(check_value_in_set){% else %}(check_multiple_values_in_set){%endif%}
     {%endfor%}{%endif%}

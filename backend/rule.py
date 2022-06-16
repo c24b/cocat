@@ -49,6 +49,8 @@ class Rule(BaseModel):
         string representation of the xml label of external vocabulary
     inspire: Optional[str]
         string representation of the inspire label
+    #multilang: bool = True
+    #    available in any langage
     translation: bool = False
         translate the value of the field if missing in other lang
     multiple: bool = None

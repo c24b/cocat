@@ -34,8 +34,13 @@ class Model(object):
         self.to_index = None
         self.has_references = None
         self.has_external_models = None
-        self.is_multilang()
-        self.get_filter_properties()
+        self.types = [None]
+        if self.is_multilang():
+            self.types.append("multilang")
+        
+        if self.get_filter_properties():
+            self.types.append("filter")
+        
         self.get_search_properties()
         self.get_index_properties()
         self.get_references()
@@ -97,21 +102,46 @@ class Model(object):
         """define is model is multilang"""
         self.is_multilang = any([r.translation for r in self.rules])
 
-    def get_external_models(self):
-        """get [("field","external_model")"""
-        self.has_external_models = any(
-            [r.external_model_name not in [None, "reference"]
-                for r in self.rules]
-        )
-        self.external_models = list(
-            set(
-                r.external_model_name
-                for r in self.rules
-                if r.external_model_name not in [None, "reference"]
+    def get_external_models(self, type=None):
+        """Given the model type get the external models linked in the model"""
+        if type is None:
+            self.has_external_models = any(
+                [r.external_model_name not in [None, "reference"]
+                    for r in self.rules]
             )
-        )
+            self.external_models = list(
+                set(
+                    r.external_model_name
+                    for r in self.rules
+                    if r.external_model_name not in [None, "reference"]
+                )
+            )
+        elif type == "filter":
+            self.has_external_models = any(
+                [r.external_model_name not in [None, "reference"]
+                    for r in self.rules if r.filter]
+            )
+            self.external_models = list(
+                set(
+                    r.external_model_name
+                    for r in self.rules if r.filter
+                    if r.external_model_name not in [None, "reference"]
+                )
+            )
+        elif type == "multilang":
+            self.has_external_models = any(
+                [r.external_model_name not in [None, "reference"]
+                    for r in self.rules if r.translation]
+            )
+            self.external_models = list(
+                set(
+                    r.external_model_name
+                    for r in self.rules if r.translation
+                    if r.external_model_name not in [None, "reference"]
+                )
+            )
         self.external_model_classes = [n.title() for n in self.external_models]
-
+    
     def get_references(self):
         self.has_references = any(
             [r.reference_table is not None for r in self.rules])
@@ -129,6 +159,7 @@ class Model(object):
                 ]
             )
         )
+        
 
     def get_by_lang(self):
         """get the model for the corresponding lang"""
@@ -137,60 +168,72 @@ class Model(object):
             # setattr(self, f"rules_{self.lang}", {})
             return [r.get_by_lang(self.lang) for r in self.rules]
 
-    def build_model(self, model_type = None):
+    def build_model(self, type = None):
         """ generate properties for a pydantic model 
-        if model_type is None:
+        if type is None:
             where model = "dataset" >>> Dataset(Model)
         else:
-            model_type == filter
+            type == filter
             where model = "dataset" >>> DatasetFilter(Model)
-            model_type == doc
-            where model = "dataset" >>> DatasetDoc(Model)
+            type == doc
+            where model = "dataset" >>> DatasetMultiLang(Model)
         """
-        if model_type is None:
-            model_name = self.name.title()
+        if type is None:
+            self.model_name = self.name.title()
         else:
-            model_name = f"{self.name.title()}{model_type.title()}"
-        self.model_name = f"class {model_name}(BaseModel)"
-        self.model_properties = [r.get_model_property(self.lang) for r in self.rules]
+            self.model_name = f"{self.name.title()}{type.title()}"
+        if type is None:
+            self.model_properties = [r.get_model_property(self.lang) for r in self.rules]
+        elif type == "filter":
+            self.model_properties = [r.get_model_property(self.lang) for r in self.rules if r.filter]
+        elif type == "multilang":
+            self.model_properties = [r.get_model_property(self.lang) for r in self.rules if r.translation]
         if self.has_external_models:
             self.import_external_models = [f"from apps.{model_name}.models import {model_name_class}" for model_name, model_name_class in zip(
                 self.external_models, self.external_model_classes)]
         self.build_example()        
 
-    def build_doc_model(self):
-        if self.is_multilang:
-            pass
+    # def build_multilang_model(self):
+    #     if self.is_multilang:
+    #         self.build_model("multilang")
+            
 
-    def build_filter_model(self):
-        if self.has_filter:
-            pass
+    # def build_filter_model(self):
+    #     if self.has_filter:
+    #         self.build_model("filter")
 
-    def build_example(self):
+    def build_example(self, type=None):
         self.example = {}
         for r in self.rules:
-            self.example.update(r.build_example_by_lang(self.lang))
+            if type is None:
+                self.example.update(r.build_example_by_lang(self.lang))
+            if type == "filter":
+                if r.filter:
+                    self.example.update(r.build_example_by_lang(self.lang))
+            if type == "multilang":
+                #build example by lang
+                if r.translation:
+                    self.example.update(r.build_example_by_lang(self.lang))
         return self.example
 
     def build_reference_values(self):
-        if self.has_references:
-            pass
+        raise NotImplementedError("Using apps.dataset.routers get_references values method")
 
     def write_model(self):
         """Generate the  FastAPI model python file"""
-        self.build_model()
-        self.build_example()
-        self.file = f"{self.name}-model.py"
-        template = load_template("Model.tpl")
-
-        with open(self.file, "w") as f:
-            py_file = template.render(
-                model_name=self.model_name,
-                model_properties=self.model_properties,
-                has_external_models = self.has_external_models,
-                external_models = self.import_external_models,
-                has_references = self.has_references,
-                references = self.references,   
-                example = self.example
-            )
-            f.write(py_file)
+        for type in self.types:    
+            self.build_model(type)
+            self.build_example(type)
+            self.file = f"{self.model_name}-model.py"
+            template = load_template("Model.tpl")
+            with open(self.file, "w") as f:
+                py_file = template.render(
+                    model_name=self.model_name,
+                    model_properties=self.model_properties,
+                    has_external_models = self.has_external_models,
+                    external_models = self.import_external_models,
+                    has_references = self.has_references,
+                    references = self.references,   
+                    example = self.example
+                )
+                f.write(py_file)
