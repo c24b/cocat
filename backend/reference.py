@@ -86,6 +86,10 @@ class Reference(BaseModel):
     def get_by_name(self, name):
         return DB.reference.find_one({"$or":[{"name": name}, {"name_f": name}, {"name_en": name}]})
 
+class ReferenceSet:
+    def __init__(self) -> None:
+        pass
+
 class CSVReferenceImporter:
     """
     CSVReferenceImporter
