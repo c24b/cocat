@@ -1,9 +1,9 @@
-[tool.poetry]
-name = "ODynCAT"
+[cocat]
+name = "cocat"
 version = "0.1.1"
 description = "An Open Source Dynamic Agnostic Cataloging System"
 
-license = "MIT"
+license = "NC-BY-SA"
 
 authors = [
     "<c24b> Constance de Quatrebarbes"
@@ -11,25 +11,25 @@ authors = [
 
 readme = "README.md"
 
-repository = "https://github.com/python-poetry/poetry"
-homepage = "https://github.com/python-poetry/poetry"
+repository = "https://github.com/c24b/cocat"
+homepage = "https://github.com/c24b/cocat"
 
-keywords = ["packaging", "poetry"]
+keywords = ["cataloging", "CMS", "data", "metadata"]
 
-[tool.poetry.dependencies]
-python = ">=3.8,<3.10"
+[dependencies]
+python = ">=3.8,<3.9"
 pydantic = {version = "^1.9.0", extras = ["email"]}
 dicttoxml = ">=1.7.4"
 black = "^22.3.0"
 beanie = "^1.11.2"
 flake8 = "^4.0.1"
 
-[tool.poetry.dev-dependencies]
+[dev-dependencies]
 pytest = "^3.0"
 pytest-cov = "^2.4"
 autopep8 = "^1.6.0"
 
-[tool.pytest.ini_options]
+[pytest.ini_options]
 pythonpath = [
   ".", "src", "backend"
 ]
