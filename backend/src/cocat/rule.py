@@ -11,6 +11,9 @@ from csv import DictReader
 from typing import Optional
 from pydantic import BaseModel, validator
 
+from cocat.reference import Reference, Vocabulary
+from cocat.model import Model
+from db import DB
 
 # def cast_to_pytype(value, datatype):
 #     '''cast value with declared datatype (javascript notation) into native python type'''
@@ -93,6 +96,7 @@ class Rule(BaseModel):
         default value in english can be used as help text or template during insertion
     comment: Optional[str] = None
         a comment on the status of the field
+    
     Methods
     -------
     get_index_property()
@@ -304,7 +308,11 @@ class Rule(BaseModel):
             return dict
         if self.datatype == "boolean":
             return bool
-
+    
+    def get_vocabulary(self) -> object:
+        if self.reference_table is not None:
+            return Vocabulary(**{"name":self.name, "references":DB.references.find({"table_name": self.reference_table})})
+        
     def get_index_property(self, lang):
         """given type return mapping properties"""
         if lang == "fr":

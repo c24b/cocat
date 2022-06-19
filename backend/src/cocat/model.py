@@ -196,15 +196,22 @@ class Model(object):
             self.model_name = f"{self.name.title()}{type.title()}"
         self.get_properties(type)
         self.get_external_models(type)
-        self.import_external_models = [f"from apps.{model_name}.models import {model_name_class}" for model_name, model_name_class in zip(
+        self.import_external_models = [f"from apps.models.{model_name} import {model_name_class}" for model_name, model_name_class in zip(
             self.external_models, self.external_model_classes)]
         self.build_example()
 
     def build_router(self, type=None):
         """Build router capabilities"""
         if self.has_external_models:
-            self.import_external_models = [f"from apps.{model_name}.models import {model_name_class}" for model_name, model_name_class in zip(
+            self.import_external_models = [f"from apps.models.{model_name} import {model_name_class}" for model_name, model_name_class in zip(
                 self.external_models, self.external_model_classes)]
+        self.import_models = [f"from apps.models.{self.name} import {self.name.title()}"]
+        self.models = [self.name.title()]
+        for type in self.types:
+            if type is not None:
+                model_name = f"{self.name.title()}{type.title()}"
+                self.import_models.append(f"from apps.models.{self.name} import {model_name}")
+                self.models.append(model_name)
         #self.has_references
         #self.references
 
