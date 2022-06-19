@@ -21,6 +21,7 @@ Minimum viable product pour la plateforme du catalogue Green Data For Health
   - validation des données
   - moteur de recherche et filtres
   - traduction  
+  - export
 Cf [CONFIG.md](CONFIG.md)
 
 - Gestion administrative des données du  catalogue: 
