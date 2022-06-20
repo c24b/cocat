@@ -137,13 +137,13 @@ class Vocabulary:
 
     def __init__(self, name: str, references: list, lang: constr(regex="^(fr|en)$") = "fr") -> None:
         self.name=name
-        self.references=[
-            Reference(**r) for r in references if r.reference_table == self.name]
+        self.references=[r for r in references if r.table_name == self.name]
         self.lang = lang
     
     def get(self):
         if len(self.references) == 0:
-            self.references = [Reference(**r) for r in DB.reference.find({"reference_table": self.name})]
+            self.references = [Reference(**r) for r in DB.reference.find({"table_name": self.name})]
+        return self.values
 
 
     @property
@@ -171,10 +171,13 @@ class CSVVocabularyBuilder:
     ----------
     csv_file: str
         csv filepath
-    references: list
-        list of Reference
     """
-
+    def __init__(self, csv_file):
+        self.ref_file= csv_file    
+        self.name  = self.ref_file.split("/")[-1].split(".")[0].replace("ref_", "")
+        self.references = CSVReferenceImporter(csv_file)
+    def build(self):
+        return Vocabulary(self.name, self.ref_file)
 class CSVReferenceImporter:
     """
     CSVReferenceImporter
@@ -194,7 +197,7 @@ class CSVReferenceImporter:
 
     def __init__(self, csv_file):
         self.ref_file= csv_file    
-       
+        
     @property
     def references(self):
         references = []

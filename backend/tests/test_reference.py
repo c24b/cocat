@@ -1,7 +1,7 @@
 import warnings
 import pytest
 import os
-from cocat.reference import Reference, CSVReferenceImporter
+from cocat.reference import CSVVocabularyBuilder, Reference, CSVReferenceImporter, Vocabulary
 from cocat.db import DB
 
 
@@ -100,4 +100,14 @@ def test_reference_006_insert_from_csv():
     c = CSVReferenceImporter(fname)
     assert len(c.references) == 4
     assert DB.reference.count_documents({"table_name": "test_environment"}) == 4, DB.references.find({"table_name": "test_environment"})
+    DB.reference.delete_many({"table_name": "test_environment"})
+
+def test_reference_007_create_voc_from_csv():
+    DB.reference.delete_many({"table_name": "test_environment"})
+    fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
+    c = CSVVocabularyBuilder(fname)
+    assert len(c.references.references) == 4
+    assert c.name == "test_environment"
+    c.build()
+    assert c.values is None, c.values
     DB.reference.delete_many({"table_name": "test_environment"})
