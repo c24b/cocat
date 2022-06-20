@@ -1,15 +1,17 @@
 """
 Reference
 """
+
 from datetime import datetime
 import os
 from typing import Optional
 from pydantic import BaseModel, validator, constr
 from csv import DictReader
 
-from beanie import Document, Indexed, init_beanie
+import pymongo
 import logging
 from .db import DB, PyObjectId
+import motor.motor_asyncio
 
 LOGGER = logging.getLogger(__name__)
 # from bson.objectid import ObjectId as BsonObjectId
@@ -53,6 +55,16 @@ class Reference(BaseModel):
     lang: str = "fr"
     updated: str = datetime.today().strftime("%Y-%m-%d")
 
+    # class Settings:
+    #     name = "references"
+    #     indexes = [
+    #         [
+    #             ("name", pymongo.TEXT),
+    #             ("name_en", pymongo.TEXT),
+    #             ("name_fr", pymongo.TEXT),
+    #             ("table_name", pymongo.TEXT),
+        #     ],
+        # ]
     @property
     def field(self):
         return self.table_name.replace("ref_", "")
@@ -70,7 +82,7 @@ class Reference(BaseModel):
                 <update date="{self.updated}"/>
             </{self.field}>
         '''
-    def add(self):
+    def add(self) -> str:
         exists = self.get_by_name(self.name)
         if exists is not None:
             LOGGER.warning(f"<Reference(name='{self.name}'> already exists.")
@@ -80,7 +92,7 @@ class Reference(BaseModel):
             self.id = DB.reference.insert_one(self.__dict__).inserted_id
             return self.id
 
-    def delete(self):
+    def delete(self) -> str:
         exists = self.get_by_name(self.name)
         if exists is None:
             LOGGER.warning(f"<Reference(name='{self.name}'> doesn't exist.")
@@ -89,10 +101,10 @@ class Reference(BaseModel):
             DB.reference.delete_one({"_id": self.id})
             return self.id
 
-    def get_by_id(self, id):
+    def get_by_id(self, id) -> dict:
         return DB.reference.find_one({"_id": id})
 
-    def get_by_name(self, name):
+    def get_by_name(self, name) -> dict:
         return DB.reference.find_one({"$or": [{"name": name}, {"name_f": name}, {"name_en": name}]})
 
 
@@ -118,15 +130,21 @@ class Vocabulary:
     
     Methods
     -------
+    
     get_value: str
         retrieve the value of
     """
 
-    def __init__(self, name: str, references: list, lang: constr(regex="^(fr|en)$") = "fr")) -> None:
+    def __init__(self, name: str, references: list, lang: constr(regex="^(fr|en)$") = "fr") -> None:
         self.name=name
         self.references=[
-            Reference(**r, lang) for r in references if r.reference_table == self.name]
+            Reference(**r) for r in references if r.reference_table == self.name]
         self.lang = lang
+    
+    def get(self):
+        if len(self.references) == 0:
+            self.references = [Reference(**r) for r in DB.reference.find({"reference_table": self.name})]
+
 
     @property
     def values(self) -> list:
@@ -145,12 +163,17 @@ class Vocabulary:
         else:
             return None
     
-    def get_reference(self, name) -> str:
-        value= [r for r in self.references if r.name == name]
-        if len(value) > 0:
-           return value[0]
-        else:
-            return None
+class CSVVocabularyBuilder:
+    """
+    CSVReferenceImporter
+
+    Attributes
+    ----------
+    csv_file: str
+        csv filepath
+    references: list
+        list of Reference
+    """
 
 class CSVReferenceImporter:
     """
@@ -170,19 +193,19 @@ class CSVReferenceImporter:
     """
 
     def __init__(self, csv_file):
-        self.csv_file= csv_file
-        self.references= []
-        self.set_reference()
-
-    def set_references(self):
-        with open(self.csv_file, "r") as f:
+        self.ref_file= csv_file    
+       
+    @property
+    def references(self):
+        references = []
+        with open(self.ref_file, "r") as f:
             reader= DictReader(f, delimiter = ",")
             for row in reader:
-                row["file"]= os.path.basename(self.csv_file)
-                row["table_name"]= os.path.splitext(row["ref_file"])[0]
-                r= Reference.parse_obj(row)
-                self.references.append(r)
+                row["file"]= os.path.basename(self.ref_file)
+                row["table_name"]= self.ref_file.split("/")[-1].split(".")[0].replace("ref_", "")
+                r =  Reference.parse_obj(row)
+                r.add()
+                references.append(r)
+        return references
 
-    def insert_references(self):
-        for ref in self.references:
-            DB.references.insert(ref)
+    

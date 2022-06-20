@@ -13,7 +13,22 @@ from pydantic import BaseModel, validator
 
 from cocat.reference import Reference, Vocabulary
 from cocat.model import Model
-from db import DB
+from cocat.db import DB
+
+# def datatype_to_pytype(datatype):
+#     """cast declared datatype (javascript notation) into native python type"""
+#     if datatype == "date":
+#         return datetime.date
+#     if datatype == "datetime":
+#         return datetime.datetime
+#     if datatype == "string":
+#         return str
+#     if datatype == "integer":
+#         return int
+#     if datatype == "object":
+#         return dict
+#     if datatype == "boolean":
+#         return bool
 
 # def cast_to_pytype(value, datatype):
 #     '''cast value with declared datatype (javascript notation) into native python type'''
@@ -96,7 +111,7 @@ class Rule(BaseModel):
         default value in english can be used as help text or template during insertion
     comment: Optional[str] = None
         a comment on the status of the field
-    
+
     Methods
     -------
     get_index_property()
@@ -294,6 +309,22 @@ class Rule(BaseModel):
                 )
         return filter
 
+    @property
+    def is_reference(self) -> bool:
+        return self.external_model_name == "reference"
+
+    @property
+    def reference(self) -> object:
+        if self.is_reference:
+            v = Vocabulary(name=self.reference_table, references=DB.reference.find({"table_name": self.reference_table}))
+            if len(v.values) == 0:
+                raise ValueError( f"{self.field} consists of an empty Vocabulary. Please create the vocabulary first.")
+            return v
+
+    @property
+    def is_external_model(self) -> bool:
+        return self.external_model_name not in ["reference", None]
+
     def datatype_to_pytype(self):
         """cast declared datatype (javascript notation) into native python type"""
         if self.datatype == "date":
@@ -308,11 +339,7 @@ class Rule(BaseModel):
             return dict
         if self.datatype == "boolean":
             return bool
-    
-    def get_vocabulary(self) -> object:
-        if self.reference_table is not None:
-            return Vocabulary(**{"name":self.name, "references":DB.references.find({"table_name": self.reference_table})})
-        
+
     def get_index_property(self, lang):
         """given type return mapping properties"""
         if lang == "fr":

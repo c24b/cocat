@@ -98,7 +98,7 @@ class Model(object):
 
     @property
     def index_mapping(self) -> dict:
-        """def"""
+        """define the elastic search mapping"""
         if self.has_index:
             if self.is_multilang:
                 return {
@@ -129,6 +129,7 @@ class Model(object):
                 }
         return {}
 
+        
     def get_external_models(self, type=None) -> list:
         """get all the external models from the model properties given it's type"""
         if type is None:
@@ -229,6 +230,8 @@ class Model(object):
         return self.example
 
     def build_reference_values(self):
+        # for rule in self.rules:
+        #     if rule.reference()
         raise NotImplementedError(
             "Using apps.dataset.routers get_references values method")
 
@@ -260,3 +263,5 @@ class Model(object):
                 filter=self.is_filter_model
             )
             f.write(py_file)
+    
+    

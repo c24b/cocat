@@ -5,9 +5,80 @@ import json
 import itertools
 from pydantic import ValidationError
 import pytest
+from cocat.reference import Vocabulary
 from cocat.rule import Rule, CSVRuleImporter
 
-
+def test_rule_is_reference():
+    rule_d = {' issue_date': '2022-05-22',
+    'admin_display_order': '18',
+ 'comment': 'champ par défault en cours de construction',
+ 'constraint': 'one of',
+ 'datatype': 'string',
+ 'default_en': 'N/D',
+ 'default_fr': 'N/D',
+ 'description_en': "''",
+ 'description_fr': '"Ce champ permet de définir le milieu concerné par la '
+                   'ressource à partir d\'un vocabulaire contrôlé interne"',
+ 'example_en': 'N/D',
+ 'example_fr': 'N/D',
+ 'external_model_display_keys': 'name|id',
+ 'external_model_name': 'reference',
+ 'field': 'environment_detail',
+ 'filter': 'False',
+ 'format': '',
+ 'inspire': '',
+ 'item_display_order': '18',
+ 'list_display_order': '18',
+ 'model': 'dataset',
+ 'multiple': 'True',
+ 'name_en': 'Environment',
+ 'name_fr': 'Milieu',
+ 'reference_table': 'ref_environment_detail',
+ 'required': 'True',
+ 'search': 'True',
+ 'translation': 'True',
+ 'vocab': 'dcat:themeTaxonomy: skos'
+    }
+    r = Rule.parse_obj(rule_d)
+    assert r.is_reference is True, r.is_reference
+    with pytest.raises(ValueError):
+        assert r.reference
+def test_vocabulary_in_rule():
+    rule_d = {' issue_date': '2022-05-22',
+    'admin_display_order': '18',
+    'comment': 'champ par défault en cours de construction',
+    'constraint': 'one of',
+    'datatype': 'string',
+    'default_en': 'N/D',
+    'default_fr': 'N/D',
+    'description_en': "''",
+    'description_fr': '"Ce champ permet de définir le milieu concerné par la '
+                    'ressource à partir d\'un vocabulaire contrôlé interne"',
+    'example_en': 'N/D',
+    'example_fr': 'N/D',
+    'external_model_display_keys': 'name|id',
+    'external_model_name': 'reference',
+    'field': 'environment_detail',
+    'filter': 'False',
+    'format': '',
+    'inspire': '',
+    'item_display_order': '18',
+    'list_display_order': '18',
+    'model': 'dataset',
+    'multiple': 'True',
+    'name_en': 'Environment',
+    'name_fr': 'Milieu',
+    'reference_table': 'ref_environment_detail',
+    'required': 'True',
+    'search': 'True',
+    'translation': 'True',
+    'vocab': 'dcat:themeTaxonomy: skos'
+    }
+    r = Rule.parse_obj(rule_d)
+    assert r.is_reference is True, r.is_reference
+    with pytest.raises(ValueError):
+        assert r.reference
+    # Vocabulary()
 def test_rule_001():
     """
     test init from a fake oneliner csv
@@ -192,20 +263,21 @@ def test_rule_reference_003():
 # assert str(excinfo.value.split("\n")) == ["boo!"],excinfo.value.split("\n")
 
 
-# def test_csv_import_005():
-#     """test with csv file"""
-#     rules = []
-#     with open("test_rules.csv", "r") as f:
-#         reader = DictReader(f, delimiter=",")
-#         for row in reader:
-#             rule_d = dict(row.items())
-#             # for k, v in row.items():
-#             #     rule_d[k] = cast_type_from_str_to_python(v)
-#             r = Rule.parse_obj(rule_d)
-#             rules.append(r)
-
+def test_csv_import_005():
+    """test with csv file"""
+    rules = []
+    with open(os.path.join(os.path.dirname(__file__),"test_rules.csv"), "r") as f:
+        reader = DictReader(f, delimiter=",")
+        for row in reader:
+            rule_d = dict(row.items())
+            # for k, v in row.items():
+            #     rule_d[k] = cast_type_from_str_to_python(v)
+            r = Rule.parse_obj(rule_d)
+            rules.append(r)
+    assert len(rules) == 1, rules
 
 def test_csv_import_008():
     fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    assert "backend/tests" in fname, fname
     c = CSVRuleImporter(fname)
     assert len(c.rules) == 52

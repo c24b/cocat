@@ -1,9 +1,11 @@
+import os
 from cocat.model import Model
 from cocat.rule import Rule, CSVRuleImporter
 
 
 def test_model_filter_000():
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     rules = raw.rules
     assert type(rules[0]) == Rule, type(rules[0])
     m = Model("dataset", rules)
@@ -87,7 +89,8 @@ def test_model_filter_000():
 
 
 def test_model_index_001():
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     rules = raw.rules
     assert type(rules[0]) == Rule, type(rules[0])
     m = Model("dataset", rules)
@@ -101,7 +104,8 @@ def test_model_index_001():
 
 def test_model_build_002():
     """test building model properties"""
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     m = Model("dataset", raw.rules)
     m.build_model()
     assert m.model_name == "Dataset"
@@ -139,7 +143,8 @@ def test_model_build_002():
 
 def test_model_build_003():
     """test building model type filter"""
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     m = Model("dataset", raw.rules)
     m.build_model("filter")
     assert m.model_name == "DatasetFilter"
@@ -158,7 +163,8 @@ def test_model_build_003():
 
 def test_model_build_004():
     """test building model type multilang"""
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     m = Model("dataset", raw.rules)
     m.build_model("multilang")
     assert m.model_name == "DatasetMultilang"
@@ -182,13 +188,15 @@ def test_model_build_004():
 'comment: Optional[str]= None'], m.model_properties
 
 def test_model_external_models():
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     m = Model("dataset", raw.rules)
     assert m.external_models == ["organization"], m.external_models
     assert m.has_external_models, m.has_external_models
 
 def test_model_references():
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     m = Model("dataset", raw.rules)
     assert m.has_references, m.has_references
     assert sorted(m.references) == sorted([('status', 'ref_status'),
@@ -202,22 +210,26 @@ def test_model_references():
 ('environment_detail', 'ref_environment_detail')]), m.references
 
 def test_is_multilang():
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     m = Model("dataset", raw.rules)
     assert m.is_multilang, [r.translation for r in m.rules]
 
 def test_is_searchable():
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     m = Model("dataset", raw.rules)
     assert m.is_searchable, [r.search for r in m.rules]
 
 def test_has_filter():
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     m = Model("dataset", raw.rules)
     assert m.has_filter, [r.filter for r in m.rules]
 
 def test_write_modelfiles():
-    raw = CSVRuleImporter("./rules.csv")
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVRuleImporter(fname)
     m = Model("dataset", raw.rules)
     assert len(m.types) == 3, m.types
     m.write_model()
