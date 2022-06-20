@@ -3,219 +3,81 @@
 import json
 from pydantic import constr, ValidationError
 
-from fastapi import APIRouter, Body, Request, HTTPException, status,Query
+from fastapi import APIRouter, Body, Request, HTTPException, status, Query
 from fastapi.responses import JSONResponse, Response
 from fastapi.encoders import jsonable_encoder
-
 from typing import Optional, List, Union, Set, Dict
-
-# {if is_searchable}
-# from gdcat_generator.search_utils import search_documents, index_document, get_indexed_fieldnames 
-# from gdcat_generator.search_utils import get_filters
-# from gdcat_generator.utils import translate_doc, get_rules, translate_value
-# from gdcat_generator.index_utils import delete_document
+#from apps.services.db import DB
 {{import_models}}
 {{import_external_models}}
 
 router = APIRouter()
 
-{% for model in models %}
-@router.get("/", response_description="Get {{model}}s", response_model=List[{{model}}], status_code=200)
-async def list_{{model}}(skip: int = 0, limit: int = 100,lang: constr(regex="^(fr|en)$")= "fr"):
-    {{model}}_docs = await {{model.title()}}Doc.find_all().skip(skip).limit(limit).to_list()
-    {{model}}s = []
-    for {{model}}_doc in {{model}}_docs:
-        {{model}} = {{model}}_doc.__dict__[lang]
-        {{model}}["lang"] = lang
-        {{model}}s.append({{model}})
-        # {{model}} in DB are not all valid
-        # {{model}}s.append({{model.title()}}(**{{model}}))
-    return {{model}}s
-{% endfor %}
-@router.post("/", response_description="Add an {{model}}", response_model={{model.title()}}Doc)
-async def create_{{model}}(model: {{model.title()}}): 
-    lang = model.lang
-    other_lang = SWITCH_LANGS[lang]
-    {{model}}_d = {lang: jsonable_encoder(model), other_lang: {}}
-    translated_{{model}} = translate_doc("{{model}}", {{model}}_d, _from=lang)
-    translated_{{model}}["lang"] = other_lang
-    {{model}}_d[other_lang] = translated_{{model}}
-    #validate the translation
-    # {{model.title()}}(**translated_{{model}})
-    try:
-        index_document("{{model}}", {{model}}_d)
-    except Exception as e:
-        print("Exception in indexing doc", e)
-        pass
-    existing_{{model}} = DB["{{model}}s"].find_one({f"{lang}.name": model.name})
-    if existing_{{model}} is not None:
-        return JSONResponse(model.dict(), status_code=status.HTTP_409_CONFLICT)    
-    new_{{model}} = await {{model.title()}}Doc(**{{model}}_d).create()
-    return JSONResponse(new_{{model}}.dict(), status_code=status.HTTP_201_CREATED)
-
-@router.get("/validate/", response_description="Check if all {{model}}s are valids", status_code=200)
-async def validate_{{model}}s(lang: constr(regex="^(fr|en)$")= "fr"):
-    results = await {{model.title()}}Doc.find().to_list()
-    valids = []
-    errors = []
-    for {{model}}_doc in results:
-        try:
-            {{model}}_d = {{model}}_doc.__dict__[lang]
-            {{model}}_d["lang"] = lang
-            {{model}} = {{model.title()}}(**{{model}}_d)
-            valids.append({{model}})
-        except (ValidationError, ValueError) as err:
-            error_msg = f"{err}".split("\n")
-            error_key = error_msg[1]
-            error_value = {{model}}_d[error_key]
-            error_desc = error_msg[2].strip()
-            errors.append([{{model}}_doc.__dict__["id"], {error_key: error_value}, error_desc])
-            pass
-        # except ValueError as err:
-        #     errors.append([{{model}}_doc.__dict__["id"],, f"{err}".split("\n")])
-            # pass
-    if len(errors) > 0:
-        return JSONResponse({"message": errors}, status_code=status.HTTP_422_VALIDATION_ERROR)
-    return JSONResponse({"message": "{{model.title()}}s are valids"}, status_code=status.HTTP_200_OK)
+{%if multilang %}
+@router.get("/", response_description="Get {{model_name}} list", response_model=List[{{model_name}}], status_code=200)
+async def get_{{model_name}}_list(skip: int = 0, limit: int = 100, lang: constr(regex="^(fr|en)$") = "fr"):
+    """display list of {{model_name}} given the specified lang default to french (fr)"""
+    model_multilang_docs = await {{model_name}}.find_all().skip(skip).limit(limit).to_list()
+    model_docs = []
+    for model_doc in model_multilang_docs:
+        model_lang = model_doc.__dict__[lang]
+        model_lang["lang"] = lang
+        model_docs.append({{model_name}}(**model_lang))
+    return model_docs
 
 
-{% if search %}    
-@router.get("/search", response_description="Search for {{model}}s using full_text_query")
-async def search_{{model}}s(request:Request, query: Optional[str] = Query(None, min_length=2, max_length=50), lang:str="fr"):
-    fields = get_indexed_fieldnames(model="{{model}}")
-    final_query = {
-        "multi_match" : {
-        "query":    query.strip(), 
-        "fields": fields
-        }
-    }
-    highlight = {
-        
-        "pre_tags" : "<em class='tag-fr highlight'>",
-        "post_tags" :"</em>",
-        "fields" : {f:{} for f in fields }
-        }
-    try:
-        results = search_documents(final_query, highlight, model="{{model}}", lang=lang)
-        if len(results["count"]) == 0:
-            raise HTTPException(status_code=404, detail=f"No {{model}}s found for query={results['query']} not found")   
-        return results
-    except Exception as e:
-        print("Error searching documents", e)
-        raise HTTPException(status_code=404, detail=f"Elastic Search is down")
-{%endif%}
-{%if filter %}
-@router.get("/filters")
-def get_filter_values(lang: constr(regex="^(fr|en)$")= "fr"):
-    return get_filters("{{model}}", lang)
-    # return jsonable_encoder(sync_get_filters(lang))
+@router.get("/<id>", response_description="Get {{model_name}} item given id and lang", response_model={{model_name}}, status_code=200)
+async def get_{{model_name}}_item(id=str, lang := constr(regex="^(fr|en)$")="fr"):
+    model_multilang_doc = await {{model_name}}.get(id)
+    if model_multilang_doc is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    model_lang = model_multilang_doc.__dict__[lang]
+    model_lang["lang"] = lang
+    return {{model_name}}(**model_lang)
 
-@router.post("/filters")
-async def filter_{{model}}s(filter:{{model.title()}}Filter, lang:constr(regex="^(fr|en)$")= "fr"):
-    index_name = f"{{model}}_{lang}"
-    filter_d = {k:v for k,v in filter.__dict__.items() if v is not None}
-    filter_d["lang"] = lang
-    #validate
-    {{model.title()}}Filter(**filter_d)
-    del filter_d["lang"]
-    req_filter = filter_d
-    if len(req_filter) == 1:
-        param_k = list(req_filter.keys())[0]
-        param_v = list(req_filter.values())[0]
-        if param_k == "{{model}}s":
-            final_q = {"match": {param_k+".name": {"query": param_v}}}
-        else:
-            final_q = {"match": {param_k: {"query": param_v}}}
-        # highlight = {}
-        # results = search_documents(final_q, highlight,model="{{model}}", lang=lang)
-        
-    else:
-        must = []
-        for key, val in req_filter.items():
-            if key == "{{model}}s":
-                must.append({"match":{key+"name":val}})
-            else:
-                must.append({"match":{key:val}})
-        final_q = {"bool" : { "must":must}}
-    highlight = {}
-    try:
-        results = search_documents(final_q, highlight, model="{{model}}", lang=lang)
-        if results["count"] == 0:
-            raise HTTPException(status_code=404, detail=f"No {{model}}s found for query={results['query']} not found")        
-        return results
-    except Exception as e:
-        print("Error searching results", e)
-        raise HTTPException(status_code=404, detail=f"No {{model}}s found for query={final_q} not found")
-{%endif%}
-@router.get("/doc", response_description="Get {{model}}s", response_model=List[{{model.title()}}Doc], status_code=200)
-async def list_{{model}}(skip: int = 0, limit: int = 100):
-    {{model}}s = await {{model.title()}}Doc.find_all().skip(skip).limit(limit).to_list()
-    return {{model}}s
-
-
-@router.get("/doc/{id}", response_description="Get a {{model}}", response_model={{model.title()}}Doc, status_code=200)
-async def get_{{model}}_doc_by_id(id):
-    {{model}}_doc = await {{model.title()}}Doc.get(id)
-    if {{model}}_doc is None:
-        return JSONResponse({"message": "{{model.title()}} not found"}, status_code=status.HTTP_404_NOT_FOUND)
-    return {{model}}_doc
-
-@router.get("/validate/{id}", response_description="Check if {{model}} is valid by id with lang", status_code=200)
-async def validate_{{model}}(id, lang: constr(regex="^(fr|en)$")= "fr"):   
-    {{model}}_doc = await {{model.title()}}Doc.get(id)
-    if {{model}}_doc is None:
-        return JSONResponse({"message": "{{model.title()}} not found"}, status_code=status.HTTP_404_NOT_FOUND)
-    try:
-        {{model}}_d = {{model}}_doc.__dict__[lang]
-        {{model}}_d["lang"] = lang
-        {{model}} = {{model.title()}}(**{{model}}_d)
-    except Exception as err:
-        return JSONResponse({"message": "str(err)"}, status_code=status.HTTP_422_VALIDATION_ERROR)
-    return JSONResponse({"message": "{{model.title()}} with name: {{model}}.name is valid"}, status_code=status.HTTP_200_OK)
-
-
-@router.get("/describe", response_description="Describe {{model}} model for display")
-def get_description(request:Request, lang: str="fr"):
-    return get_rules("{{model}}")
-
-@router.get("/{id}", response_description="Get {{model}}", response_model={{model.title()}}, status_code=200)
-async def get_{{model}}_by_id_and_lang(id, lang: constr(regex="^(fr|en)$")= "fr"):
-    {{model}}_doc = await {{model.title()}}Doc.get(id)
-    if {{model}}_doc is None:
-        return JSONResponse({"message": "{{model.title()}} not found"}, status_code=status.HTTP_404_NOT_FOUND)
-    {{model}}_d = {{model}}_doc.__dict__[lang]
-    {{model}}_d["lang"] = lang
-    return {{model.title()}}(**{{model}}_d)
-
-@router.delete("/{id}", response_description="Delete  {{model}}", status_code=204)
-async def delete_{{model}}_by_id(id):
-    {{model}}_doc = await {{model.title()}}Doc.get(id)
-    if {{model}}_doc is None:
-        return JSONResponse({"message": "{{model.title()}} not found"}, status_code=status.HTTP_404_NOT_FOUND)
-    {{model}}_doc.delete()
-    try:
-        delete_document("{{model}}", {{model}}_doc.dict())
-    except Exception as e:
-        print("Exception removing document from index", e)
-        pass
+@router.delete("/<id>", response_description="Delete {{model_name}} item given id", response_model={{model_name}}, status_code=204)
+async def delete_{{model_name}}_item(id=str):
+    model_multilang_doc = await {{model_name}}.get(id)
+    if model_multilang_doc is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    model_multilang_doc.delete()
+    #index
     return Response(status_code= status.HTTP_204_NO_CONTENT)
 
-@router.patch("/{id}", response_description="Update a {{model}}", response_model={{model.title()}}, status_code=202)
-async def update_{{model}}(id, updated_field: {{model.title()}}, lang: constr(regex="^(fr|en)$") = "fr"):
-    existing_{{model}}_doc = await {{model.title()}}Doc.get(id)
-    other_lang = SWITCH_LANGS[lang]
-    if existing_{{model}}_doc is None:
-        return JSONResponse({"message": "{{model}} not found"}, status_code=status.HTTP_404_NOT_FOUND)
-    {{model}} = {{model.title()}}(**existing_{{model}}_doc[lang]).update(Set())
-    #set values
-    for k,v in updated_field.items():
-        if v is not None:
-            existing_{{model}}_doc[lang][k] = v
-            existing_{{model}}_doc[other_lang][k] = translate_value("{{model}}", k, v, _from=lang)
-    #validate
-    {{model}} = {{model.title()}}(**existing_{{model}}_doc[lang])
-    # {{model}}_lang = {{model.title()}}(**existing_{{model}}_doc[other_lang])
+@router.post("/", response_description="Add a new {{model_name}} item given lang", response_model={{model_name}}, status_code=201)
+async def create_{{model_name}}(model: {{model_name}}, lang := constr(regex="^(fr|en)$")="fr"):
+    new_doc = {lang: model}
+    #translate
+    new_multilang_doc = translate_doc(new_doc)
+    #index
+    index_doc(new_multilang_doc)
+    new_model = await {{model_name}}Multilang(**new_multilang_doc).create()
+    return JSONResponse(new_multilang_doc, status_code=status.HTTP_201_CREATED)
 
-    await {{model.title()}}Doc.update(Set({f"{{model.title()}}Doc.{lang}":{{model}}.dict()}))
-    await {{model.title()}}Doc.update(Set({f"{{model.title()}}Doc.{other_lang}":existing_{{model}}_doc[other_lang]}))
-    return {{model}}
+@router.post("/multiple", response_description="Add new multiple {{model_name}} item given lang", response_model=List[{{model_name}}], status_code=201)
+async def add_multiple_{{model_name}}(models: list = List[{{model_name}}], lang := constr(regex="^(fr|en)$")="fr"):
+    for model in models:
+        new_doc = {lang: model}
+        #translate
+        new_multilang_doc = translate_doc(new_doc)
+        #index
+        index_doc(new_multilang_doc)
+        new_model = await {{model_name}}Multilang(**new_multilang_doc).create()
+    return JSONResponse(models, status_code=status.HTTP_201_CREATED)
+
+@router.put("/<id>", response_description="Update {{model_name}} item given id and lang", response_model={{model_name}}, status_code=201)
+async def update_{{model_name}}(id: str, model: {{model_name}}, lang : constr(regex="^(fr|en)$")="fr"):
+    doc = await {{model_name}}.get(id)
+    if doc is None:
+        raise HTTPException(status_code=404, detail="Item not found")
+    for key, value in model.items():
+        doc[lang][key] = value 
+    #update translation
+    new_multilang_doc = translate_doc(new_doc)
+    #update index
+    delete_index_doc(doc)
+    index_doc(new_multilang_doc)
+    updated_doc  = await doc.save()
+    return JSONResponse(updated_doc, status_code=status.HTTP_204_UPDATED)
+
+{%endif%}
