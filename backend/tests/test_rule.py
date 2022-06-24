@@ -5,7 +5,7 @@ import json
 import itertools
 from pydantic import ValidationError
 import pytest
-from cocat.reference import Vocabulary
+from cocat.vocabulary import Vocabulary
 from cocat.rule import Rule, CSVRuleImporter
 
 def test_rule_is_reference():

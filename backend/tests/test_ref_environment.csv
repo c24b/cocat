@@ -1,5 +1,5 @@
 name_en,name_fr,slug,uri
-Air,Air,,
-Water,Eau,,
-Soils,Sols,,
-Food,Alimentation,,
+Air,Air,air,http://dcat-ap.ch/vocabulary/themes/air
+Water,Eau,water,http://dcat-ap.ch/vocabulary/themes/water
+Soils,Sols,soil,http://dcat-ap.ch/vocabulary/themes/soil
+Food,Alimentation,food,http://dcat-ap.ch/vocabulary/themes/food
