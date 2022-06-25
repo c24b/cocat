@@ -3,7 +3,9 @@ import pytest
 import os
 from cocat.reference import Reference
 from cocat.db import DB
+from csv import DictReader
 
+from cocat.vocabulary import Vocabulary
 
 def test_reference_001():
     header = ["name_en", "name_fr", "uri", "slug", "vocabulary"]
@@ -114,3 +116,31 @@ def test_reference_006_update():
     r.update(new_value)
     assert r.name_fr == "Semestrielle"
     r.delete()
+
+def test_reference_007_find_by_name():
+    DB.reference.drop()
+    r = Reference
+    fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
+    with open(fname, "r") as f:
+        reader = DictReader(f, delimiter=",")
+        for row in reader:
+            row["file"] = os.path.basename(fname)
+            row["vocabulary"] = "environment"
+            row["lang"] = "en"
+            r = Reference.parse_obj(row)
+            r.delete()
+            r.add()
+        
+    assert DB.reference.count_documents({"vocabulary": "environment"}) == 4 
+    assert DB.reference.distinct("name_fr") == ['Air', 'Alimentation', 'Eau', 'Sols']
+    ref = Reference(name="test", lang="fr")
+    new_ref = ref.get_by_label("Food")
+    assert new_ref["name_fr"] == "Alimentation", new_ref["name_fr"]
+    assert new_ref["name_en"] == "Food", new_ref["name_en"]
+    assert new_ref["uri"] == "http://dcat-ap.ch/vocabulary/themes/food", new_ref["uri"]
+    new_ref2 = ref.get_by_label("Alimentation")
+    assert new_ref == new_ref2
+    assert new_ref2["name_fr"] == "Alimentation", new_ref2
+    assert new_ref2["name_en"] == "Food", new_ref2["name_en"]
+    assert new_ref2["uri"] == "http://dcat-ap.ch/vocabulary/themes/food", new_ref2["uri"]
+    DB.reference.delete_many({"vocabulary": "environment"})

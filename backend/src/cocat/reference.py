@@ -117,10 +117,20 @@ class Reference(BaseModel):
             return True, self.id
 
     def get_by_id(self, id) -> dict:
-        return DB.reference.find_one({"_id": id})
+        ref = DB.reference.find_one({"_id": id})
+        if ref is None:
+            return None
+        return dict(ref)
 
     def get_by_label(self, name) -> dict:
-        return DB.reference.find_one({"$or": [{"label": name}, {"name_f": name}, {"name_en": name}]})
+        ref = DB.reference.find_one({"$or": [{"label": name}, {"name_fr": name}, {"name_en": name}]})
+        if ref is None:
+            return None
+        return dict(ref)
 
-    def get_by_lang_name(self, name, lang=constr(regex="^(fr|en)$")) -> dict:
-        return DB.reference.find_one({f"name_{lang}": name})
+
+    def get_by_lang(self, name, lang=constr(regex="^(fr|en)$")) -> dict:
+        ref = DB.reference.find_one({f"name_{lang}": name})
+        if ref is None:
+            return None
+        return dict(ref)

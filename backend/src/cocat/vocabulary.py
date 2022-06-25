@@ -114,7 +114,11 @@ class Vocabulary(BaseModel):
         return self.references
 
     def get_labels_by_lang(self, lang):
-        return [r.get(f"name_{lang}") for r in self.references]
+        if lang not in ["en", "fr"]:
+            raise ValueError(f"Language with code {lang} is not supported: choose between 'en' and 'fr'")
+        if lang == "en":
+            return [r.name_en for r in self.references]
+        return [r.name_fr for r in self.references]
 
     def set_standards(self, standards):
         self.standards = standards
