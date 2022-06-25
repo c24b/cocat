@@ -2,9 +2,7 @@
 model
 
 """
-# from fileinput import filename
 import os
-import json
 from re import template
 from pydantic import constr
 from jinja2 import Environment, FileSystemLoader, select_autoescape, exceptions

@@ -2,7 +2,7 @@
 import os
 from csv import DictReader
 from typing import Optional, List
-from pydantic import BaseModel, validator, constr
+from pydantic import BaseModel, validator, constr, root_validator
 import pymongo
 import logging
 from cocat.db import DB, PyObjectId
@@ -39,18 +39,35 @@ class Vocabulary(BaseModel):
     lang: constr(regex="^(fr|en)$") = "fr"
     csv_file: Optional[str] = None
     filename: Optional[str]
-    references: Optional[List[Reference]] = []
+    references: Optional[List[Reference]] = [ ]
     db_name: Optional[str] = "reference"
     standards: Optional[List] = []
 
-    # @validator("lang", pre=True)
-    # def check_lang(cls, value, pre=True) -> str:
-    #     if value not in ["en", "fr"]:
-    #         raise ValueError(
-    #             "Lang {value} is not supported: choose languages between 'en' or 'fr'")
-    #     else:
-    #         return value
-
+    @root_validator
+    def set_references(cls, values) -> dict:
+        if len(values["references"]) == 0:
+            refs = DB.reference.find({"vocabulary": values["name"]})
+            if refs is not None:
+                values["references"] = [ Reference(**r) for r in refs]
+            
+        return values
+    
+    @root_validator
+    def create_from_csv_file(cls, values) -> dict:
+        if values["csv_file"] is not None:
+            values["filename"] = os.path.basename(values["csv_file"]) 
+            with open(values["csv_file"], "r") as f:
+                reader = DictReader(f, delimiter=",")
+                for row in reader:
+                    row["file"] = os.path.basename(values["filename"])
+                    row["vocabulary"] = values["name"]
+                    row["lang"] = values["lang"]
+                    r = Reference.parse_obj(row)
+                    r.add()
+                    values["references"].append(r)
+        return values
+    
+    
     @property
     def labels(self) -> list:
         return [r.label for r in self.references]
@@ -66,7 +83,8 @@ class Vocabulary(BaseModel):
     @property
     def uris(self) -> list:
         return [r.uri for r in self.references if r.uri is not None]
-
+    
+        
     def create(self, csv_file) -> list:
         self.filename = os.path.basename(csv_file)
         self.references = []

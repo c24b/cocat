@@ -7,14 +7,17 @@ parameters to build model
 import datetime
 import json
 from csv import DictReader
+
+import logging
 # import dicttoxml
 from typing import Optional
 from pydantic import BaseModel, validator
 
-from cocat.reference import Reference, Vocabulary
+from cocat.vocabulary import Vocabulary
 from cocat.model import Model
 from cocat.db import DB
 
+LOGGER = logging.getLogger(__name__)
 # def datatype_to_pytype(datatype):
 #     """cast declared datatype (javascript notation) into native python type"""
 #     if datatype == "date":
@@ -316,9 +319,9 @@ class Rule(BaseModel):
     @property
     def reference(self) -> object:
         if self.is_reference:
-            v = Vocabulary(name=self.reference_table, references=DB.reference.find({"table_name": self.reference_table}))
-            if len(v.values) == 0:
-                raise ValueError( f"{self.field} consists of an empty Vocabulary. Please create the vocabulary first.")
+            v = Vocabulary(name=self.reference_table)
+            if len(v.labels) == 0:
+                LOGGER.warning(f"<Rule(field='{self.field}'> is a reference to an empty Vocabulary.")
             return v
 
     @property

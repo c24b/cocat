@@ -11,39 +11,38 @@ from cocat.rule import Rule, CSVRuleImporter
 def test_rule_is_reference():
     rule_d = {' issue_date': '2022-05-22',
     'admin_display_order': '18',
- 'comment': 'champ par défault en cours de construction',
- 'constraint': 'one of',
- 'datatype': 'string',
- 'default_en': 'N/D',
- 'default_fr': 'N/D',
- 'description_en': "''",
- 'description_fr': '"Ce champ permet de définir le milieu concerné par la '
-                   'ressource à partir d\'un vocabulaire contrôlé interne"',
- 'example_en': 'N/D',
- 'example_fr': 'N/D',
- 'external_model_display_keys': 'name|id',
- 'external_model_name': 'reference',
- 'field': 'environment_detail',
- 'filter': 'False',
- 'format': '',
- 'inspire': '',
- 'item_display_order': '18',
- 'list_display_order': '18',
- 'model': 'dataset',
- 'multiple': 'True',
- 'name_en': 'Environment',
- 'name_fr': 'Milieu',
- 'reference_table': 'ref_environment_detail',
- 'required': 'True',
- 'search': 'True',
- 'translation': 'True',
- 'vocab': 'dcat:themeTaxonomy: skos'
-    }
+    'comment': 'champ par défault en cours de construction',
+    'constraint': 'one of',
+    'datatype': 'string',
+    'default_en': 'N/D',
+    'default_fr': 'N/D',
+    'description_en': "''",
+    'description_fr': '"Ce champ permet de définir le milieu concerné par la '
+                    'ressource à partir d\'un vocabulaire contrôlé interne"',
+    'example_en': 'N/D',
+    'example_fr': 'N/D',
+    'external_model_display_keys': 'name|id',
+    'external_model_name': 'reference',
+    'field': 'environment_detail',
+    'filter': 'False',
+    'format': '',
+    'inspire': '',
+    'item_display_order': '18',
+    'list_display_order': '18',
+    'model': 'dataset',
+    'multiple': 'True',
+    'name_en': 'Environment',
+    'name_fr': 'Milieu',
+    'reference_table': 'ref_environment_detail',
+    'required': 'True',
+    'search': 'True',
+    'translation': 'True',
+    'vocab': 'dcat:themeTaxonomy: skos'
+        }
     r = Rule.parse_obj(rule_d)
     assert r.is_reference is True, r.is_reference
-    with pytest.raises(ValueError):
-        assert r.reference
-def test_vocabulary_in_rule():
+    
+def test_empty_vocabulary_in_rule():
     rule_d = {' issue_date': '2022-05-22',
     'admin_display_order': '18',
     'comment': 'champ par défault en cours de construction',
@@ -76,9 +75,50 @@ def test_vocabulary_in_rule():
     }
     r = Rule.parse_obj(rule_d)
     assert r.is_reference is True, r.is_reference
-    with pytest.raises(ValueError):
-        assert r.reference
-    # Vocabulary()
+    assert r.reference == Vocabulary(name="ref_environment_detail", lang="fr")
+    assert r.reference.labels == []
+
+def test_init_vocabulary_in_rule():
+    fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
+    v = Vocabulary(name="environment", lang="fr")
+    v.delete()
+    v.create(csv_file=fname)
+
+    rule_d = {' issue_date': '2022-05-22',
+    'admin_display_order': '18',
+    'comment': 'champ par défault en cours de construction',
+    'constraint': 'one of',
+    'datatype': 'string',
+    'default_en': 'N/D',
+    'default_fr': 'N/D',
+    'description_en': "''",
+    'description_fr': '"Ce champ permet de définir le milieu concerné par la '
+                    'ressource à partir d\'un vocabulaire contrôlé interne"',
+    'example_en': 'N/D',
+    'example_fr': 'N/D',
+    'external_model_display_keys': 'name|id',
+    'external_model_name': 'reference',
+    'field': 'environment_detail',
+    'filter': 'False',
+    'format': '',
+    'inspire': '',
+    'item_display_order': '18',
+    'list_display_order': '18',
+    'model': 'dataset',
+    'multiple': 'True',
+    'name_en': 'Environment',
+    'name_fr': 'Milieu',
+    'reference_table': 'environment',
+    'required': 'True',
+    'search': 'True',
+    'translation': 'True',
+    'vocab': 'dcat:themeTaxonomy: skos'
+    }
+    r = Rule.parse_obj(rule_d)
+    assert r.is_reference is True, r.is_reference
+    assert r.reference == Vocabulary(name="environment", lang="fr")
+    assert r.reference.names_fr == ["Air", "Eau","Sols", "Alimentation"], r.reference.names_fr
+
 def test_rule_001():
     """
     test init from a fake oneliner csv
