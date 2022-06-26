@@ -7,7 +7,7 @@ from re import template
 from pydantic import constr
 from jinja2 import Environment, FileSystemLoader, select_autoescape, exceptions
 
-from vocabulary import Vocabulary
+from cocat.vocabulary import Vocabulary
 
 
 def load_template(template_name, template_dirname="templates"):
