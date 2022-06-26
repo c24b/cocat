@@ -64,7 +64,7 @@ class Property(BaseModel):
         name of the model the field is a reference to
     external_model_display_keys: Optional[list]
         list of the foreign key for the external model
-    vocabulary_table: Optional[str]
+    vocabulary_name: Optional[str]
         name of the vocabularry table that stores all the possible references
     vocabulary_label: Optional[str]
         string representation of the xml label of external vocabulary
@@ -129,7 +129,7 @@ class Property(BaseModel):
     field: str
     external_model_name: Optional[str] = None
     external_model_display_keys: Optional[list] = None
-    vocabulary_table: Optional[str]
+    vocabulary_name: Optional[str]
     vocabulary_label: Optional[str] = None
     inspire: Optional[str] = None
     translation: bool = False
@@ -157,10 +157,10 @@ class Property(BaseModel):
         "field",
         "external_model_name",
         "external_model_display_keys",
-        "vocabulary_table",
+        "vocabulary_name",
         "format",
         "constraint",
-        "vocab",
+        "vocabulary_label",
         "inspire",
         pre=True,
     )
@@ -172,10 +172,10 @@ class Property(BaseModel):
     @validator(
         "external_model_name",
         "external_model_display_keys",
-        "vocabulary_table",
+        "vocabulary_name",
         "format",
         "constraint",
-        "vocab",
+        "vocabulary_label",
         "inspire",
         pre=True,
         allow_reuse=True,
@@ -237,7 +237,7 @@ class Property(BaseModel):
     #     else:
     #         return cast_to_pytype(value, datatype)
 
-    @validator("vocabulary_table", pre=True)
+    @validator("vocabulary_name", pre=True)
     def check_reference(cls, value, values):
         ext_model = values["external_model_name"]
         if value is not None:
@@ -248,10 +248,10 @@ class Property(BaseModel):
     @validator("external_model_name")
     def check_external_model(cls, value, values, **kwargs):
         field = values["field"]
-        if "vocabulary_table" in values:
-            vocabulary_table = values["vocabulary_table"]
+        if "vocabulary_name" in values:
+            vocabulary_name = values["vocabulary_name"]
 
-            if vocabulary_table is not None and value is None:
+            if vocabulary_name is not None and value is None:
                 return "vocabulary"
         return value
 
@@ -319,12 +319,13 @@ class Property(BaseModel):
     @property
     def vocabulary(self) -> object:
         if self.is_vocabulary:
-            v = Vocabulary(name=self.vocabulary_table)
+            v = Vocabulary(name=self.vocabulary_name)
             
             if len(v.labels) == 0:
                 LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
             return v
-
+        return None
+    
     @property
     def is_external_model(self) -> bool:
         return self.external_model_name not in ["vocabulary", None]

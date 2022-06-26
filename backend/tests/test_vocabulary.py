@@ -3,10 +3,18 @@ from cocat.reference import Reference
 from cocat.vocabulary import Vocabulary
 from cocat.db import DB
 
+def test_vocabulary_000():
+    fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
+    v = Vocabulary(name="environment", lang="fr", csv_file=fname)
+    assert v.name == "environment"
+    assert v.lang == "fr"
+    assert v.labels ==  ['Air', 'Eau', 'Sols', 'Alimentation'], v.labels
+    assert v.names_fr == v.labels
+    v.delete()
+
 def test_vocabulary_001():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
     v = Vocabulary(name="environment", lang="fr")
-    v.delete()
     v.create(csv_file=fname)
     assert v.filename == os.path.basename(fname)
     assert len(v.references) == 4, len(v.references)
@@ -23,7 +31,6 @@ def test_vocabulary_001():
 def test_vocabulary_002_get_refs():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
     v = Vocabulary(name="environment", lang="fr")
-    v.delete()
     v.create(csv_file=fname)
     references = v.get_references()
     assert len(references) == 4, references
@@ -34,7 +41,6 @@ def test_vocabulary_002_get_refs():
 def test_voc_003_get_labels():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
     v = Vocabulary(name="environment", lang="fr")
-    v.delete()
     v.create(csv_file=fname)
     labels_fr = v.get_labels_by_lang("fr")
     assert labels_fr == ['Air', 'Eau', 'Sols', 'Alimentation'], labels_fr
