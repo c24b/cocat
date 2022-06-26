@@ -1,79 +1,79 @@
 import os
 from cocat.model import Model
-from cocat.rule import Rule, CSVRuleImporter
+from cocat.property import Property, CSVPropertyImporter 
 
 
 def test_model_filter_000():
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    rules = raw.rules
-    assert type(rules[0]) == Rule, type(rules[0])
-    m = Model("dataset", rules)
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    properties = raw.properties
+    assert type(properties[0]) == Property, type(properties[0])
+    m = Model("dataset", properties)
     assert m.name == "dataset", m.name
     assert m.has_filter is True
     assert m.filter_properties == {
         "accrual_periodicity": {
             "datatype": "string",
-            "external_model": "reference",
+            "external_model": "vocabulary",
             "multiple": True,
-            "reference": "ref_accrual_periodicity",
+            "vocabulary": "ref_accrual_periodicity",
         },
         "has_georeference_dimension": {
             "datatype": "boolean",
             "external_model": None,
             "multiple": False,
-            "reference": None,
+            "vocabulary": None,
         },
         "is_open_data": {
             "datatype": "boolean",
             "external_model": None,
             "multiple": False,
-            "reference": None,
+            "vocabulary": None,
         },
         "license": {
             "datatype": "string",
-            "external_model": "reference",
+            "external_model": "vocabulary",
             "multiple": False,
-            "reference": "ref_license",
+            "vocabulary": "ref_license",
         },
         "media_type": {
             "datatype": "string",
-            "external_model": "reference",
+            "external_model": "vocabulary",
             "multiple": True,
-            "reference": "ref_media_type",
+            "vocabulary": "ref_media_type",
         },
         "millesime": {
             "datatype": "integer",
             "external_model": None,
             "multiple": True,
-            "reference": None,
+            "vocabulary": None,
         },
         "organizations": {
             "datatype": "object",
             "external_model": "organization",
             "multiple": True,
-            "reference": None,
+            "vocabulary": None,
         },
         "spatial_granularity": {
             "datatype": "string",
-            "external_model": "reference",
+            "external_model": "vocabulary",
             "multiple": False,
-            "reference": "ref_spatial_granularity",
+            "vocabulary": "ref_spatial_granularity",
         },
         "temporal": {
             "datatype": "integer",
             "external_model": None,
             "multiple": False,
-            "reference": None,
+            "vocabulary": None,
         },
         "update_frequency": {
             "datatype": "string",
-            "external_model": "reference",
+            "external_model": "vocabulary",
             "multiple": False,
-            "reference": "ref_update_frequency",
+            "vocabulary": "ref_update_frequency",
         },
     }, m.filters
-    assert sorted(m.reference_tables) == sorted(
+    assert sorted(m.vocabulary_tables) == sorted(
         [
             "environment_detail",
             "expositure_medium",
@@ -85,15 +85,15 @@ def test_model_filter_000():
             "update_frequency",
             "spatial_granularity",
         ]
-    ), m.reference_tables
+    ), m.vocabulary_tables
 
 
 def test_model_index_001():
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    rules = raw.rules
-    assert type(rules[0]) == Rule, type(rules[0])
-    m = Model("dataset", rules)
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    properties = raw.properties
+    assert type(properties[0]) == Property, type(properties[0])
+    m = Model("dataset", properties)
     assert m.name == "dataset", m.name
     assert m.has_filter is True
     assert m.is_searchable is True
@@ -104,9 +104,9 @@ def test_model_index_001():
 
 def test_model_build_002():
     """test building model properties"""
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    m = Model("dataset", raw.rules)
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    m = Model("dataset", raw.properties)
     m.build_model()
     assert m.model_name == "Dataset"
     assert len(m.model_properties) == 27, len(m.model_properties)
@@ -143,9 +143,9 @@ def test_model_build_002():
 
 def test_model_build_003():
     """test building model type filter"""
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    m = Model("dataset", raw.rules)
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    m = Model("dataset", raw.properties)
     m.build_model("filter")
     assert m.model_name == "DatasetFilter"
     assert len(m.model_properties) == 10, len(m.model_properties)
@@ -163,9 +163,9 @@ def test_model_build_003():
 
 def test_model_build_004():
     """test building model type multilang"""
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    m = Model("dataset", raw.rules)
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    m = Model("dataset", raw.properties)
     m.build_model("multilang")
     assert m.model_name == "DatasetMultilang"
     assert len(m.model_properties) == 17, len(m.model_properties)
@@ -188,16 +188,16 @@ def test_model_build_004():
 'comment: Optional[str]= None'], m.model_properties
 
 def test_model_external_models():
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    m = Model("dataset", raw.rules)
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    m = Model("dataset", raw.properties)
     assert m.external_models == ["organization"], m.external_models
     assert m.has_external_models, m.has_external_models
 
 def test_model_references():
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    m = Model("dataset", raw.rules)
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    m = Model("dataset", raw.properties)
     assert m.has_references, m.has_references
     assert sorted(m.references) == sorted([('status', 'ref_status'),
 ('media_type', 'ref_media_type'),
@@ -210,26 +210,26 @@ def test_model_references():
 ('environment_detail', 'ref_environment_detail')]), m.references
 
 def test_is_multilang():
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    m = Model("dataset", raw.rules)
-    assert m.is_multilang, [r.translation for r in m.rules]
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    m = Model("dataset", raw.properties)
+    assert m.is_multilang, [r.translation for r in m.properties]
 
 def test_is_searchable():
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    m = Model("dataset", raw.rules)
-    assert m.is_searchable, [r.search for r in m.rules]
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    m = Model("dataset", raw.properties)
+    assert m.is_searchable, [r.search for r in m.properties]
 
 def test_has_filter():
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    m = Model("dataset", raw.rules)
-    assert m.has_filter, [r.filter for r in m.rules]
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    m = Model("dataset", raw.properties)
+    assert m.has_filter, [r.filter for r in m.properties]
 
 def test_write_modelfiles():
-    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    raw = CSVRuleImporter(fname)
-    m = Model("dataset", raw.rules)
+    fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
+    raw = CSVPropertyImporter(fname)
+    m = Model("dataset", raw.properties)
     assert len(m.types) == 3, m.types
     m.write_model()
