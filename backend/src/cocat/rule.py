@@ -1,5 +1,5 @@
 """
-Property
+Rule
 
 parameters to build model
 """
@@ -45,9 +45,9 @@ LOGGER = logging.getLogger(__name__)
 #         return value
 
 
-class Property(BaseModel):
+class Rule(BaseModel):
     """
-    A class to represent a Property
+    A class to represent a Rule
 
 
     Attributes
@@ -64,9 +64,9 @@ class Property(BaseModel):
         name of the model the field is a reference to
     external_model_display_keys: Optional[list]
         list of the foreign key for the external model
-    vocabulary_name: Optional[str]
-        name of the vocabulary table that stores all the possible references
-    vocabulary_label: Optional[str]
+    reference_table: Optional[str]
+        name of the reference table that stores all the possible values
+    vocab: Optional[str]
         string representation of the xml label of external vocabulary
     inspire: Optional[str]
         string representation of the inspire label
@@ -129,8 +129,8 @@ class Property(BaseModel):
     field: str
     external_model_name: Optional[str] = None
     external_model_display_keys: Optional[list] = None
-    vocabulary_name: Optional[str] = None
-    vocabulary_label: Optional[str] = None
+    reference_table: Optional[str]
+    vocab: Optional[str] = None
     inspire: Optional[str] = None
     translation: bool = False
     multiple: bool = None
@@ -157,10 +157,10 @@ class Property(BaseModel):
         "field",
         "external_model_name",
         "external_model_display_keys",
-        "vocabulary_name",
+        "reference_table",
         "format",
         "constraint",
-        "vocabulary_label",
+        "vocab",
         "inspire",
         pre=True,
     )
@@ -172,10 +172,10 @@ class Property(BaseModel):
     @validator(
         "external_model_name",
         "external_model_display_keys",
-        "vocabulary_name",
+        "reference_table",
         "format",
         "constraint",
-        "vocabulary_label",
+        "vocab",
         "inspire",
         pre=True,
         allow_reuse=True,
@@ -237,22 +237,22 @@ class Property(BaseModel):
     #     else:
     #         return cast_to_pytype(value, datatype)
 
-    @validator("vocabulary_name", pre=True)
+    @validator("reference_table", pre=True)
     def check_reference(cls, value, values):
         ext_model = values["external_model_name"]
         if value is not None:
             if ext_model is None:
-                return "vocabulary"
+                return "reference"
         return value
 
     @validator("external_model_name")
     def check_external_model(cls, value, values, **kwargs):
         field = values["field"]
-        if "vocabulary_name" in values:
-            vocabulary_name = values["vocabulary_name"]
+        if "reference_table" in values:
+            reference_table = values["reference_table"]
 
-            if vocabulary_name is not None and value is None:
-                return "vocabulary"
+            if reference_table is not None and value is None:
+                return "reference"
         return value
 
     @validator("external_model_display_keys")
@@ -313,22 +313,21 @@ class Property(BaseModel):
         return filter
 
     @property
-    def is_vocabulary(self) -> bool:
-        return self.external_model_name == "vocabulary"
+    def is_reference(self) -> bool:
+        return self.external_model_name == "reference"
 
     @property
-    def vocabulary(self) -> object:
-        if self.is_vocabulary:
-            v = Vocabulary(name=self.vocabulary_name)
+    def reference(self) -> object:
+        if self.is_reference:
+            v = Vocabulary(name=self.reference_table)
             
             if len(v.labels) == 0:
-                LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
+                LOGGER.warning(f"<Rule(field='{self.field}'> is a reference to an empty Vocabulary.")
             return v
-        return None
-    
+
     @property
     def is_external_model(self) -> bool:
-        return self.external_model_name not in ["vocabulary", None]
+        return self.external_model_name not in ["reference", None]
 
     def datatype_to_pytype(self):
         """cast declared datatype (javascript notation) into native python type"""
@@ -352,7 +351,7 @@ class Property(BaseModel):
         else:
             analyzer = "std_english"
         if self.search or self.filter:
-            if self.external_model_name == "vocabulary":
+            if self.external_model_name == "reference":
                 return {
                     "type": "text",
                     "fields": {"raw": {"type": "keyword"}},
@@ -499,17 +498,17 @@ class Property(BaseModel):
         if not to in accepted_formats:
 
             raise ValueError(f"{to} not in {accepted_formats_str}")
-        property_d = dict(self.__dict__.items())
+        rule_d = dict(self.__dict__.items())
         if to == "csv":
-            header = ",".join(list(property_d.keys()))
-            values = ",".join(list([str(n) for n in property_d.values()]))
+            header = ",".join(list(rule_d.keys()))
+            values = ",".join(list([str(n) for n in rule_d.values()]))
             return "\n".join([header, values])
         elif to == "json":
-            return json.dumps(property_d)
+            return json.dumps(rule_d)
         elif to == "schema_json":
             return self.schema_json(indent=2)
         # elif to == "xml":
-        #     return dicttoxml.dicttoxml(property_d)
+        #     return dicttoxml.dicttoxml(rule_d)
         elif to == "pydantic":
             datatype = self._convert("model")
             if self.required:
@@ -564,12 +563,12 @@ class Property(BaseModel):
             else:
                 return str
         elif to == "dcat":
-            if self.vocabulary_label is not None:
+            if self.vocab is not None:
                 if value is not None:
-                    return f"<{self.vocabulary_label}>{value}</{self.vocabulary_label}>"
+                    return f"<{self.vocab}>{value}</{self.vocab}>"
             return
         elif to == "inspire":
-            return f"<{self.inspire}>{value}</{self.vocabulary_label}>"
+            return f"<{self.inspire}>{value}</{self.vocab}>"
         elif to == "dict":
             if self.multiple:
                 # if self.is_controled:
@@ -585,15 +584,15 @@ class Property(BaseModel):
     #     }
 
 
-class CSVPropertyImporter:
+class CSVRuleImporter:
     def __init__(self, csv_file):
         self.csv_file = csv_file
-        self.properties = []
-        self.set_properties()
+        self.rules = []
+        self.set_rules()
 
-    def set_properties(self):
+    def set_rules(self):
         with open(self.csv_file, "r") as f:
             reader = DictReader(f, delimiter=",")
             for row in reader:
-                r = Property.parse_obj(row)
-                self.properties.append(r)
+                r = Rule.parse_obj(row)
+                self.rules.append(r)

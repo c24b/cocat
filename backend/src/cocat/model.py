@@ -45,12 +45,12 @@ class Model(object):
             return {
                     r.field: {
                     "vocabulary":r.vocabulary, 
-                    "vocabulary_name": r.vocabulary.name, 
-                    "names_fr": r.vocabulary.names_fr,
-                    "names_en": r.vocabulary.names_en
+                    # "vocabulary_name": r.vocabulary.name, 
+                    # "names_fr": r.vocabulary.names_fr,
+                    # "names_en": r.vocabulary.names_en
                     }
                 
-                    for r in self.rules
+                    for r in self.rules if r.is_vocabulary
                 }
         return None
     

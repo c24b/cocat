@@ -44,15 +44,6 @@ class Vocabulary(BaseModel):
     standards: Optional[List] = []
 
     @root_validator
-    def set_references(cls, values) -> dict:
-        if len(values["references"]) == 0:
-            refs = DB.reference.find({"vocabulary": values["name"]})
-            if refs is not None:
-                values["references"] = [ Reference(**r) for r in refs]
-            
-        return values
-    
-    @root_validator
     def create_from_csv_file(cls, values) -> dict:
         if values["csv_file"] is not None:
             values["filename"] = os.path.basename(values["csv_file"]) 
@@ -66,7 +57,17 @@ class Vocabulary(BaseModel):
                     r.add()
                     values["references"].append(r)
         return values
+   
+    @root_validator
+    def set_references(cls, values) -> dict:
+        if len(values["references"]) == 0:
+            refs = DB.reference.find({"vocabulary": values["name"]})
+            if refs is not None:
+                values["references"] = [ Reference(**r) for r in refs]
+            
+        return values
     
+     
     
     @property
     def labels(self) -> list:

@@ -5,7 +5,6 @@ from cocat.reference import Reference
 from cocat.db import DB
 from csv import DictReader
 
-from cocat.vocabulary import Vocabulary
 
 def test_reference_001():
     header = ["name_en", "name_fr", "uri", "slug", "vocabulary"]

@@ -340,4 +340,4 @@ def test_init_vocabulary_in_property_009():
     assert r.vocabulary is not None
     assert r.vocabulary.names_fr == ["Air", "Eau","Sols", "Alimentation"], r.vocabulary.names_fr
     assert r.vocabulary.labels == ["Air", "Eau","Sols", "Alimentation"], r.vocabulary.labels
-    # v.delete()
+    v.delete()
