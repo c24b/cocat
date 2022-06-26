@@ -319,7 +319,7 @@ class Property(BaseModel):
     @property
     def vocabulary(self) -> object:
         if self.is_vocabulary:
-            v = Vocabulary(name=self.vocabulary_name)
+            v = Vocabulary(name=self.vocabulary_labelulary_name)
             
             if len(v.labels) == 0:
                 LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
@@ -564,12 +564,12 @@ class Property(BaseModel):
             else:
                 return str
         elif to == "dcat":
-            if self.vocab is not None:
+            if self.vocabulary_label is not None:
                 if value is not None:
-                    return f"<{self.vocab}>{value}</{self.vocab}>"
+                    return f"<{self.vocabulary_label}>{value}</{self.vocabulary_label}>"
             return
         elif to == "inspire":
-            return f"<{self.inspire}>{value}</{self.vocab}>"
+            return f"<{self.inspire}>{value}</{self.vocabulary_label}>"
         elif to == "dict":
             if self.multiple:
                 # if self.is_controled:
