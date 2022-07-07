@@ -8,10 +8,11 @@ import datetime
 import json
 from csv import DictReader
 
+import os
 import logging
 # import dicttoxml
 from typing import Optional
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, root_validator
 
 from cocat.vocabulary import Vocabulary
 from cocat.model import Model
@@ -66,6 +67,8 @@ class Property(BaseModel):
         list of the foreign key for the external model
     vocabulary_name: Optional[str]
         name of the vocabulary table that stores all the possible references
+    vocabulary_filename: Optional[str]
+        csv_file that stores the vocabulary
     vocabulary_label: Optional[str]
         string representation of the xml label of external vocabulary
     inspire: Optional[str]
@@ -114,7 +117,9 @@ class Property(BaseModel):
         default value in english can be used as help text or template during insertion
     comment: Optional[str] = None
         a comment on the status of the field
-
+    conf_dir: Optional[str] = '~/conf/'
+        directory folder for configuration option: used to find vocabularies or rules files
+    
     Methods
     -------
     get_index_property()
@@ -130,6 +135,7 @@ class Property(BaseModel):
     external_model_name: Optional[str] = None
     external_model_display_keys: Optional[list] = None
     vocabulary_name: Optional[str] = None
+    vocabulary_filename: Optional[str] = None
     vocabulary_label: Optional[str] = None
     inspire: Optional[str] = None
     translation: bool = False
@@ -152,15 +158,29 @@ class Property(BaseModel):
     default_fr: Optional[str] = None
     default_en: Optional[str] = None
     comment: Optional[str] = None
-
+    csv_file: Optional[str] = None
+    conf_dir: Optional[str] = None
+    
+    @root_validator
+    def setup_conf_dirs(cls, values) -> dict:
+        if "conf_dir" in values and values["conf_dir"] is not None:
+            values["vocabulary_dir"] = os.path.join(os.path.abspath(values["conf_dir"]), "vocabularies")
+        elif "csv_file" in values and values["csv_file"] is not None:
+            values["conf_dir"] = os.path.dirname(values["csv_file"]) 
+            values["vocabulary_dir"] = os.path.join(values["conf_dir"], "vocabularies")
+        return values
+    
     @validator(
         "field",
         "external_model_name",
         "external_model_display_keys",
         "vocabulary_name",
+        "vocabulary_filename",
+        "vocabulary_label",
+        "conf_dir",
+        "csv_file",
         "format",
         "constraint",
-        "vocabulary_label",
         "inspire",
         pre=True,
     )
@@ -177,6 +197,8 @@ class Property(BaseModel):
         "constraint",
         "vocabulary_label",
         "inspire",
+        "conf_dir",
+        "csv_file",
         pre=True,
         allow_reuse=True,
     )
@@ -220,29 +242,23 @@ class Property(BaseModel):
             else:
                 return value.split("|")
         return value
-
-    # @validator("example_fr", "example_en", "default_fr", "default_en", pre=True)
-    # def validate_datatype_example(cls, value, values):
-    #     """cast example and default with the declared datatype"""
-
-    #     field = values["field"]
-    #     datatype = values["datatype"]
-    #     is_multiple = values["multiple"]
-    #     if value is None:
-    #         if is_multiple:
-    #             return [None]
-    #         return value
-    #     if is_multiple:
-    #         return [cast_to_pytype(v, datatype) for v in value.split('|')]
-    #     else:
-    #         return cast_to_pytype(value, datatype)
-
+    
     @validator("vocabulary_name", pre=True)
     def check_reference(cls, value, values):
         ext_model = values["external_model_name"]
         if value is not None:
             if ext_model is None:
                 return "vocabulary"
+        return value
+    
+    @validator("vocabulary_filename", pre=True)
+    def check_vocabulary_filename(cls, value, values):
+        voc_name =  values["vocabulary_name"]+".csv"
+        if value is None:
+            if voc_name is not None:
+                return os.path.join(values["vocabulary_dir"],voc_name)
+        else:
+            return os.path.join(values["vocabulary_dir"], value)
         return value
 
     @validator("external_model_name")
@@ -319,10 +335,10 @@ class Property(BaseModel):
     @property
     def vocabulary(self) -> object:
         if self.is_vocabulary:
-            v = Vocabulary(name=self.vocabulary_name)
-            
-            if len(v.labels) == 0:
-                LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
+            v = Vocabulary(name=self.vocabulary_name, csv_file=self.vocabulary_filename)
+            # v.create(csv_file=self.vocabulary_filename)
+            # if len(v.labels) == 0:
+                # LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
             return v
         return None
     
@@ -586,8 +602,9 @@ class Property(BaseModel):
 
 
 class CSVPropertyImporter:
-    def __init__(self, csv_file):
+    def __init__(self, csv_file, conf_dir="./"):
         self.csv_file = csv_file
+        self.conf_dir= os.path.abspath(conf_dir)
         self.properties = []
         self.set_properties()
 
@@ -595,5 +612,7 @@ class CSVPropertyImporter:
         with open(self.csv_file, "r") as f:
             reader = DictReader(f, delimiter=",")
             for row in reader:
+                row["csv_file"] = self.csv_file
+                row["conf_dir"] = self.conf_dir
                 r = Property.parse_obj(row)
                 self.properties.append(r)

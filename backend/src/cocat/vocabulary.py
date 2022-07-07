@@ -50,8 +50,12 @@ class Vocabulary(BaseModel):
             with open(values["csv_file"], "r") as f:
                 reader = DictReader(f, delimiter=",")
                 for row in reader:
+                    
                     row["file"] = os.path.basename(values["filename"])
-                    row["vocabulary"] = values["name"]
+                    if values["name"] in ["", None]:
+                        row["vocabulary"] = row["file"].split(".")[0]
+                    else:
+                        row["vocabulary"] = values["name"]
                     row["lang"] = values["lang"]
                     r = Reference.parse_obj(row)
                     r.add()

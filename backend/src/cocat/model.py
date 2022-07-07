@@ -27,10 +27,12 @@ class Model(object):
 
     """
 
-    def __init__(self, name: str, rules: list, lang: constr(regex="^(fr|en)$") = "fr"):
+    def __init__(self, name: str, rules: list, conf_dir=os.path.dirname(__file__), lang: constr(regex="^(fr|en)$") = "fr"):
         self.name = name
+        
         self.rules = [r for r in rules if r.model == self.name]
         self.lang = lang
+        self.conf_dir = os.path.abspath(conf_dir)
         # self.get_references()
         # self.get_external_models()
 
@@ -42,12 +44,12 @@ class Model(object):
     @property
     def vocabularies(self) -> dict:
         if self.has_vocabulary:
+            
             return {
                     r.field: {
-                    "vocabulary":r.vocabulary, 
-                    # "vocabulary_name": r.vocabulary.name, 
-                    # "names_fr": r.vocabulary.names_fr,
-                    # "names_en": r.vocabulary.names_en
+                    "names_fr": r.vocabulary.names_fr,
+                    "names_en": r.vocabulary.names_en,
+                    "uris": r.vocabulary.uris
                     }
                 
                     for r in self.rules if r.is_vocabulary
@@ -57,6 +59,7 @@ class Model(object):
     @property
     def has_external_model(self) -> bool:
         return any([r.has_external_model for r in self.rules])
+    
     @property
     def external_models(self) -> dict:
         if self.has_external_model:

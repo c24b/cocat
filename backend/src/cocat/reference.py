@@ -79,7 +79,7 @@ class Reference(BaseModel):
             </{self.field}>
         '''
 
-    def add(self) -> (bool, str):
+    def add(self) -> tuple:
         exists = self.get_by_label(self.label)
         if exists is not None:
             LOGGER.warning(f"<Reference(name='{self.label}'> already exists.")
@@ -89,7 +89,7 @@ class Reference(BaseModel):
             self.id = DB.reference.insert_one(self.__dict__).inserted_id
             return True, self.id
 
-    def update(self, update_reference: dict) -> (bool, str):
+    def update(self, update_reference: dict) -> tuple:
         if self.id is None:
             LOGGER.warning(
                 f"<Reference(name='{self.label}'> doesn't exists.")
@@ -106,7 +106,7 @@ class Reference(BaseModel):
             DB.reference.update_one({"_id": exists["_id"]}, {"$set": {k: v for k, v in update_reference.items() if k not in invalid_keys}})
             return True, self.id
             
-    def delete(self) -> (bool, str):
+    def delete(self) -> tuple:
         exists = self.get_by_label(self.name)
         if exists is None:
             LOGGER.warning(f"<Reference(name='{self.name}'> doesn't exist.")
