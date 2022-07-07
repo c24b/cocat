@@ -1,8 +1,0 @@
-@startuml
-
-object dataset
-object organization
-object user
-
-dataset .. organization: (1,n)
-@enduml
