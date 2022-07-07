@@ -23,10 +23,10 @@ def test_property_init_001():
     assert r.required
     assert r.filter is False, r.filter
     assert r.search is True, r.search
-    assert r.external_model_name == "vocabulary"
+    assert r.external_model_name == "vocabulary", r.external_model_name
     assert r.external_model_display_keys == ["name", "id"]
     assert r.admin_display_order != -1
-    assert r.external_model_name == "vocabulary" and r.vocabulary != ""
+    assert r.vocabulary.name == "ref_environment_detail", r.vocabulary_name
     assert r.issue_date == datetime.date.today()
 
 
@@ -341,3 +341,12 @@ def test_init_vocabulary_in_property_009():
     assert r.vocabulary.names_fr == ["Air", "Eau","Sols", "Alimentation"], r.vocabulary.names_fr
     assert r.vocabulary.labels == ["Air", "Eau","Sols", "Alimentation"], r.vocabulary.labels
     v.delete()
+
+def test_vocabulary_property_010():
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    assert "backend/tests" in fname, fname
+    c = CSVPropertyImporter(fname)
+    assert len(c.properties) == 52
+    for prop in c.properties:
+        if prop.is_vocabulary:
+            assert prop.vocabulary.labels is not None, prop.vocabulary.labels

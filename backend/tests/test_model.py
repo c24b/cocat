@@ -13,10 +13,21 @@ def test_model_init():
 def test_model_vocabulary():
     fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
     raw = CSVPropertyImporter(fname)
-    a_model = Model("dataset", raw.properties)
+    a_model = Model("dataset", raw.properties, conf_dir="./")
     assert a_model.has_vocabulary, a_model.has_vocabulary
+    assert a_model.conf_dir == os.path.abspath("./"), a_model.conf_dir
     assert len(a_model.vocabularies) == 9,len(a_model.vocabularies) 
-
+    assert list(a_model.vocabularies.keys()) ==  [
+        'environment_detail',
+        'expositure_medium',
+        'env_agent_type',
+        'status',
+        'license',
+        'media_type',
+        'accrual_periodicity',
+        'update_frequency',
+        'spatial_granularity'], list(a_model.vocabularies.keys())
+    assert list(a_model.vocabularies["accrual_periodicity"].keys()) == [], a_model.vocabularies["accrual_periodicity"]
 # def test_model_filter():
 #     fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
 #     raw = CSVPropertyImporter(fname)

@@ -14,6 +14,15 @@ def test_vocabulary_000():
 
 def test_vocabulary_001():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
+    v = Vocabulary(name="environment", csv_file=fname)
+    assert v.name == "environment", v.name
+    assert v.lang == "fr"
+    assert v.labels ==  ['Air', 'Eau', 'Sols', 'Alimentation'], v.labels
+    assert v.names_fr == v.labels
+    v.delete()
+
+def test_vocabulary_002():
+    fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
     v = Vocabulary(name="environment", lang="fr")
     v.create(csv_file=fname)
     assert v.filename == os.path.basename(fname)
