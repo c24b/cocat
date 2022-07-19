@@ -2,29 +2,69 @@ import os
 from cocat.reference import Reference
 from cocat.vocabulary import Vocabulary
 from cocat.db import DB
+from csv import DictReader
 
-def test_vocabulary_000():
+def test_vocabulary_000_init_with_csv():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
     v = Vocabulary(name="environment", lang="fr", csv_file=fname)
     assert v.name == "environment"
     assert v.lang == "fr"
     assert v.labels ==  ['Air', 'Eau', 'Sols', 'Alimentation'], v.labels
     assert v.names_fr == v.labels
+    assert len(v.references) == 4, len(v.references)
+    assert list(v.references[0].__dict__.keys()) == [
+        'id','vocabulary',
+        'name_en',
+        'name_fr',
+        'uri',
+        'slug',
+        'lang',
+        'updated',
+        'standards',
+        '_id'], list(v.references[0].__dict__.keys())
     v.delete()
 
-def test_vocabulary_001():
+def test_vocabulary_000_init_with_jsonl():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
-    v = Vocabulary(name="environment", csv_file=fname)
-    assert v.name == "environment", v.name
+    with open(fname, "r") as f:
+        reader = DictReader(f, delimiter=",")
+        references = []
+        for row in reader:
+            row["file"] = os.path.basename(fname)
+            row["vocabulary"] = "environment"
+            row["lang"] = "fr"
+            references.append(row)
+    assert references[0] == {'file': 'test_ref_environment.csv', 'lang': 'fr', 'name_en': 'Air', 'name_fr': 'Air', 'slug': 'air','uri': 'http://dcat-ap.ch/vocabulary/themes/air','vocabulary': 'environment'}, references[0]
+    v = Vocabulary(name="environment", lang="fr", references=references)
+    assert v.name == "environment"
     assert v.lang == "fr"
     assert v.labels ==  ['Air', 'Eau', 'Sols', 'Alimentation'], v.labels
     assert v.names_fr == v.labels
+    assert len(v.references) == 4, len(v.references)
+    assert list(v.references[0].__dict__.keys()) == [
+        'id','vocabulary',
+        'name_en',
+        'name_fr',
+        'uri',
+        'slug',
+        'lang',
+        'updated',
+        'standards'], list(v.references[0].__dict__.keys())
     v.delete()
 
-def test_vocabulary_002():
+def test_vocabulary_001_existing_voc():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
-    v = Vocabulary(name="environment", lang="fr")
-    v.create(csv_file=fname)
+    v = Vocabulary(name="environment", lang="fr", csv_file=fname)
+    assert v.exists, v.exists
+    v2 = Vocabulary(name="environment", lang="fr")
+    assert v2.exists, v2.exists
+    v.delete()
+    assert v2.exists is False, v2.exists
+    
+def test_vocabulary_002_default_lang():
+    fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
+    v = Vocabulary(name="environment", lang="fr", csv_file=fname)
+    # v.create(csv_file=fname)
     assert v.filename == os.path.basename(fname)
     assert len(v.references) == 4, len(v.references)
     assert sorted(v.labels) == sorted(['Air', 'Eau', 'Sols', 'Alimentation']), v.labels

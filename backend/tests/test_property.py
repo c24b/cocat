@@ -13,11 +13,12 @@ def test_property_init_001():
     """
     test init from a fake oneliner csv
     """
-    header = "field,model,name_fr,name_en,external_model_name,external_model_display_keys,vocabulary_name,vocabulary_label,inspire,translation,multiple,constraint,datatype,format,search,filter,admin_display_order,list_display_order,item_display_order,required,description_fr,description_en,example_fr,example_en,default_fr,comment,default_en, issue_date"
-    value = """environment_detail,dataset,Milieu,Environment,vocabulary,name|id,ref_environment_detail,dcat:themeTaxonomy: skos,,True,True,one of,string,,True,False,18,18,18,True,"Ce champ permet de définir le milieu concerné par la ressource à partir d'un vocabulary_labelulaire contrôlé interne",'',N/D,N/D,N/D,champ par défault en cours de construction,N/D,2022-05-22"""
+    header = "field,model,name_fr,name_en,external_model_name,external_model_display_keys,datatype,vocabulary_name,vocabulary_label,vocabulary_filename,inspire,translation,multiple,constraint,datatype,format,search,filter,admin_display_order,list_display_order,item_display_order,required,description_fr,description_en,example_fr,example_en,default_fr,comment,default_en, issue_date"
+    value = """environment_detail,dataset,Milieu,Environment,vocabulary,name|id,string,environment, environment, ref_environment_detail.csv,dcat:themeTaxonomy: skos,,True,True,one of,string,,True,False,18,18,18,True,"Ce champ permet de définir le milieu concerné par la ressource à partir d'un vocabulary_labelulaire contrôlé interne",'',N/D,N/D,N/D,champ par défault en cours de construction,N/D,2022-05-22"""
     property_d = dict(zip(header.split(","), value.split(",")))
     assert property_d["external_model_name"] == "vocabulary"
     assert property_d["external_model_display_keys"] == "name|id"
+    assert property_d["vocabulary_name"] == "environment"
     r = Property.parse_obj(property_d)
     assert r.multiple
     assert r.required
@@ -26,7 +27,7 @@ def test_property_init_001():
     assert r.external_model_name == "vocabulary", r.external_model_name
     assert r.external_model_display_keys == ["name", "id"]
     assert r.admin_display_order != -1
-    assert r.vocabulary.name == "ref_environment_detail", r.vocabulary_name
+    assert r.vocabulary.name == "environment_detail", r.vocabulary_name
     assert r.issue_date == datetime.date.today()
 
 
@@ -330,6 +331,7 @@ def test_init_vocabulary_in_property_009():
     'name_en': 'Environment',
     'name_fr': 'Milieu',
     'vocabulary_name': 'environment',
+    'vocabulary_filename': 'vocabularies/environment.csv',
     'required': 'True',
     'search': 'True',
     'translation': 'True',
@@ -337,14 +339,14 @@ def test_init_vocabulary_in_property_009():
     }
     r = Property.parse_obj(property_d)
     assert r.is_vocabulary is True, r.is_vocabulary
-    assert r.vocabulary is not None
+    assert r.vocabulary.csv_file is not None
     assert r.vocabulary.names_fr == ["Air", "Eau","Sols", "Alimentation"], r.vocabulary.names_fr
     assert r.vocabulary.labels == ["Air", "Eau","Sols", "Alimentation"], r.vocabulary.labels
     v.delete()
 
 def test_vocabulary_property_010():
     fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
-    assert "backend/tests" in fname, fname
+    assert "test_rules" in fname, fname
     c = CSVPropertyImporter(fname)
     assert len(c.properties) == 52
     for prop in c.properties:
