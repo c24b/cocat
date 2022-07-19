@@ -1,0 +1,12 @@
+slug,name_en,name_fr,uri
+scientific_organization,Academia / Scientific Organization,Université / Organisation scientifique,http://purl.org/adms/publishertype/Academia-ScientificOrganisation
+company,Company,Entreprise,http://purl.org/adms/publishertype/Company
+industry_consortium,Industry Consortium,Consortium d'industriel,http://purl.org/adms/publishertype/IndustryConsortium
+local_authority,LocalAuthority,Autorité locale,http://purl.org/adms/publishertype/LocalAuthority
+national_authority,National Authority,Autorité nationale,http://purl.org/adms/publishertype/NationalAuthority
+non_governmental_organization,Non Governmental Organization,Organisation Non Gouvernementale,http://purl.org/adms/publishertype/NonGovernmentalOrganisation
+non_profit_organization,Non Profit Organization,Organisation à but non lucratif,http://purl.org/adms/publishertype/NonProfitOrganisation
+private_individuals,Private Individual(s),Particulier(s),http://purl.org/adms/publishertype/PrivateIndividual(s)
+regional_authority,Regional Authority,Autorité régionale,http://purl.org/adms/publishertype/RegionalAuthority
+standardization_body,Standardization Body,Organisme de normalisation,http://purl.org/adms/publishertype/StandardisationBody
+supra_national_authority,Supra National Authority,Autorité supranationale,http://purl.org/adms/publishertype/SupraNationalAuthority

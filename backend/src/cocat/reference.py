@@ -78,11 +78,14 @@ class Reference(BaseModel):
                 <update date="{self.updated}"/>
             </{self.field}>
         '''
-
-    def add(self) -> tuple:
+    @property
+    def exists(self)-> bool:
+        return self.get_by_label(self.label) is not None
+    
+    def add(self) -> tuple:    
         exists = self.get_by_label(self.label)
         if exists is not None:
-            LOGGER.warning(f"<Reference(name='{self.label}'> already exists.")
+            # LOGGER.warning(f"<Reference(name='{self.label}'> already exists.")
             self.id = exists["_id"]
             return False, self.id
         else:
@@ -115,7 +118,7 @@ class Reference(BaseModel):
             self.id = exists["_id"]
             DB.reference.delete_one({"_id": self.id})
             return True, self.id
-
+        
     def get_by_id(self, id) -> dict:
         ref = DB.reference.find_one({"_id": id})
         if ref is None:

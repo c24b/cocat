@@ -196,6 +196,7 @@ class Property(BaseModel):
         "format",
         "constraint",
         "vocabulary_label",
+        "vocabulary_filename",
         "inspire",
         "conf_dir",
         "csv_file",
@@ -253,13 +254,13 @@ class Property(BaseModel):
     
     @validator("vocabulary_filename", pre=True)
     def check_vocabulary_filename(cls, value, values):
-        voc_name =  values["vocabulary_name"]+".csv"
-        if value is None:
-            if voc_name is not None:
-                return os.path.join(values["vocabulary_dir"],voc_name)
-        else:
-            return os.path.join(values["vocabulary_dir"], value)
+        if value is not None:
+            if not value.endswith(".csv"):
+                return os.path.abspath(value+".csv")
+            else:
+                return os.path.abspath(value)
         return value
+        
 
     @validator("external_model_name")
     def check_external_model(cls, value, values, **kwargs):
@@ -330,15 +331,16 @@ class Property(BaseModel):
 
     @property
     def is_vocabulary(self) -> bool:
-        return self.external_model_name == "vocabulary"
+        return self.external_model_name == "vocabulary" and self.vocabulary_filename is not None
 
     @property
     def vocabulary(self) -> object:
-        if self.is_vocabulary:
+        if self.is_vocabulary and self.vocabulary_filename is not None:
+            # LOGGER.warning(self.vocabulary_filename)
             v = Vocabulary(name=self.vocabulary_name, csv_file=self.vocabulary_filename)
             # v.create(csv_file=self.vocabulary_filename)
-            # if len(v.labels) == 0:
-                # LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
+            if len(v.labels) == 0:
+                LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
             return v
         return None
     

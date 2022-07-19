@@ -1,0 +1,14 @@
+name_fr,name_en,uri,slug
+Attribution,Attribution,http://purl.org/adms/licencetype/Attribution,by
+Domaine publique,PublicDomain,http://purl.org/adms/licencetype/PublicDomain,cc
+Effet viral (alias Share-Alike),ViralEffect-ShareAlike,http://purl.org/adms/licencetype/ViralEffect-ShareAlike,sa
+A usage non commercial seulement,NonCommercialUseOnly,http://purl.org/adms/licencetype/NonCommercialUseOnly,nc
+Aucun travail dérivé,NoDerivativeWork,http://purl.org/adms/licencetype/NoDerivativeWork,nd
+Droits d'auteur requis,RoyaltiesRequired,http://purl.org/adms/licencetype/RoyaltiesRequired,
+Noms réservés / Approbation / Statut officiel,ReservedNames-Endorsement-OfficialStatus,http://purl.org/adms/licencetype/ReservedNames-Endorsement-OfficialStatus,
+Coût nominal,NominalCost,http://purl.org/adms/licencetype/NominalCost,
+Rétrocéder,GrantBack,http://purl.org/adms/licencetype/GrantBack,
+Compétence dans l'UE,JurisdictionWithinTheEU,http://purl.org/adms/licencetype/JurisdictionWithinTheEU,
+Autres clauses restrictives,OtherRestrictiveClauses,http://purl.org/adms/licencetype/OtherRestrictiveClauses,
+Charge de brevet connue,KnownPatentEncumbrance,http://purl.org/adms/licencetype/KnownPatentEncumbrance,
+Droits de propriété intellectuelle inconnus,UnknownIPR,http://purl.org/adms/licencetype/UnknownIPR,

@@ -47,19 +47,23 @@ class Vocabulary(BaseModel):
     def create_from_csv_file(cls, values) -> dict:
         if values["csv_file"] is not None:
             values["filename"] = os.path.basename(values["csv_file"]) 
-            with open(values["csv_file"], "r") as f:
-                reader = DictReader(f, delimiter=",")
-                for row in reader:
-                    
-                    row["file"] = os.path.basename(values["filename"])
-                    if values["name"] in ["", None]:
-                        row["vocabulary"] = row["file"].split(".")[0]
-                    else:
-                        row["vocabulary"] = values["name"]
-                    row["lang"] = values["lang"]
-                    r = Reference.parse_obj(row)
-                    r.add()
-                    values["references"].append(r)
+            exists = os.path.isfile(values["csv_file"])
+            if not exists:
+                raise ValueError(f"Vocabulary Error. File Not Found Error: {values['csv_file']} doesn't exists.")
+            else: 
+                with open(values["csv_file"], "r") as f:
+                    reader = DictReader(f, delimiter=",")
+                    for row in reader:
+                        
+                        row["file"] = os.path.basename(values["filename"])
+                        if values["name"] in ["", None]:
+                            row["vocabulary"] = row["file"].split(".")[0]
+                        else:
+                            row["vocabulary"] = values["name"]
+                        row["lang"] = values["lang"]
+                        r = Reference.parse_obj(row)
+                        r.add()
+                        values["references"].append(r)
         return values
    
     @root_validator

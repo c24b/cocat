@@ -44,7 +44,10 @@ class Model(object):
     @property
     def vocabularies(self) -> dict:
         if self.has_vocabulary:
-            
+            # for r in self.rules: 
+            #     if r.is_vocabulary:
+            #         r.vocabulary.create()
+
             return {
                     r.field: {
                     "names_fr": r.vocabulary.names_fr,

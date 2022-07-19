@@ -1,0 +1,18 @@
+model,fieldname,scope,tablename
+References,contact_type,dataset,ref_contact_type
+References,dataset_type,dataset,ref_dataset_type
+References,environment,dataset,ref_environment
+References,nature,dataset,ref_nature
+References,subthematic,dataset,ref_subthematic
+References,exposure_factor_category,dataset,ref_exposure_factor_category
+References,theme_category,dataset,ref_theme_category
+References,license_name,dataset,ref_license_name
+References,license_type,dataset,ref_license_type
+References,data_format,dataset,ref_data_format
+References,data_domain,dataset,ref_data_domain
+References,broadcast_mode,dataset,ref_broadcast_mode
+References,projection_system,dataset,ref_projection_system
+References,organization_type,organization,ref_organization_type
+References,agent_type,organization,ref_agent_type
+References,action,"log, rôle",ref_action
+References,perimeter,"log, rôle",ref_perimeter
