@@ -158,17 +158,17 @@ class Property(BaseModel):
     default_fr: Optional[str] = None
     default_en: Optional[str] = None
     comment: Optional[str] = None
-    csv_file: Optional[str] = None
-    conf_dir: Optional[str] = None
+    # csv_file: Optional[str] = None
+    # conf_dir: Optional[str] = None
     
-    @root_validator
-    def setup_conf_dirs(cls, values) -> dict:
-        if "conf_dir" in values and values["conf_dir"] is not None:
-            values["vocabulary_dir"] = os.path.join(os.path.abspath(values["conf_dir"]), "vocabularies")
-        elif "csv_file" in values and values["csv_file"] is not None:
-            values["conf_dir"] = os.path.dirname(values["csv_file"]) 
-            values["vocabulary_dir"] = os.path.join(values["conf_dir"], "vocabularies")
-        return values
+    # @root_validator
+    # def setup_conf_dirs(cls, values) -> dict:
+    #     if "conf_dir" in values and values["conf_dir"] is not None:
+    #         values["vocabulary_dir"] = os.path.join(os.path.abspath(values["conf_dir"]), "vocabularies")
+    #     elif "csv_file" in values and values["csv_file"] is not None:
+    #         values["conf_dir"] = os.path.dirname(values["csv_file"]) 
+    #         values["vocabulary_dir"] = os.path.join(values["conf_dir"], "vocabularies")
+    #     return values
     
     @validator(
         "field",
@@ -177,8 +177,6 @@ class Property(BaseModel):
         "vocabulary_name",
         "vocabulary_filename",
         "vocabulary_label",
-        "conf_dir",
-        "csv_file",
         "format",
         "constraint",
         "inspire",
@@ -198,8 +196,6 @@ class Property(BaseModel):
         "vocabulary_label",
         "vocabulary_filename",
         "inspire",
-        "conf_dir",
-        "csv_file",
         pre=True,
         allow_reuse=True,
     )
@@ -338,7 +334,6 @@ class Property(BaseModel):
         if self.is_vocabulary and self.vocabulary_filename is not None:
             # LOGGER.warning(self.vocabulary_filename)
             v = Vocabulary(name=self.vocabulary_name, csv_file=self.vocabulary_filename)
-            # v.create(csv_file=self.vocabulary_filename)
             if len(v.labels) == 0:
                 LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
             return v
@@ -605,8 +600,8 @@ class Property(BaseModel):
 
 class CSVPropertyImporter:
     def __init__(self, csv_file, conf_dir="./"):
-        self.csv_file = csv_file
-        self.conf_dir= os.path.abspath(conf_dir)
+        # self.csv_file = csv_file
+        # self.conf_dir= os.path.abspath(conf_dir)
         self.properties = []
         self.set_properties()
 
@@ -614,7 +609,7 @@ class CSVPropertyImporter:
         with open(self.csv_file, "r") as f:
             reader = DictReader(f, delimiter=",")
             for row in reader:
-                row["csv_file"] = self.csv_file
-                row["conf_dir"] = self.conf_dir
+                # row["csv_file"] = self.csv_file
+                # row["conf_dir"] = self.conf_dir
                 r = Property.parse_obj(row)
                 self.properties.append(r)
