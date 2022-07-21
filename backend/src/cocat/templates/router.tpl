@@ -7,6 +7,7 @@ from fastapi import APIRouter, Body, Request, HTTPException, status, Query
 from fastapi.responses import JSONResponse, Response
 from fastapi.encoders import jsonable_encoder
 from typing import Optional, List, Union, Set, Dict
+from apps.models.{{name}} import {{model_name}}
 #from apps.services.db import DB
 {{import_models}}
 {{import_external_models}}
@@ -15,7 +16,7 @@ router = APIRouter()
 
 
 @router.get("/", response_description="Get {{model_name}} list", response_model=List[{{model_name}}], status_code=200)
-async def get_{{model_name}}_list(skip: int = 0, limit: int = 100, lang: constr(regex="^(fr|en)$") = "fr"):
+async def get_{{name}}_list(skip: int = 0, limit: int = 100, lang: constr(regex="^(fr|en)$") = "fr"):
     """display list of {{model_name}} given the specified lang default to french (fr)"""
     model_multilang_docs = await {{model_name}}.find_all().skip(skip).limit(limit).to_list()
     {%if multilang %}
@@ -31,7 +32,7 @@ async def get_{{model_name}}_list(skip: int = 0, limit: int = 100, lang: constr(
 
 
 @router.get("/<id>", response_description="Get {{model_name}} item given id and lang", response_model={{model_name}}, status_code=200)
-async def get_{{model_name}}_item(id=str, lang := constr(regex="^(fr|en)$")="fr"):
+async def get_{{name}}_item(id=str, lang := constr(regex="^(fr|en)$")="fr"):
     model_multilang_doc = await {{model_name}}.get(id)
     if model_multilang_doc is None:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -43,7 +44,7 @@ async def get_{{model_name}}_item(id=str, lang := constr(regex="^(fr|en)$")="fr"
     return model_multilang_doc
     {%endif%}
 @router.delete("/<id>", response_description="Delete {{model_name}} item given id", response_model={{model_name}}, status_code=204)
-async def delete_{{model_name}}_item(id=str):
+async def delete_{name}}_item(id=str):
     model_multilang_doc = await {{model_name}}.get(id)
     if model_multilang_doc is None:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -53,8 +54,7 @@ async def delete_{{model_name}}_item(id=str):
     return Response(status_code= status.HTTP_204_NO_CONTENT)
 
 @router.post("/", response_description="Add a new {{model_name}} item given lang", response_model={{model_name}}, status_code=201)
-async def create_{{model_name}}(model: {{model_name}}, lang := constr(regex="^(fr|en)$")="fr"):
-    {%if multilang}
+async def create_{{name}}(model: {{model_name}}, lang := constr(regex="^(fr|en)$")="fr"):
     new_doc = {lang: model}
     #translate
     new_multilang_doc = translate_doc(new_doc)
@@ -63,13 +63,11 @@ async def create_{{model_name}}(model: {{model_name}}, lang := constr(regex="^(f
     new_model = await {{model_name}}Multilang(**new_multilang_doc).create()
     return JSONResponse(new_multilang_doc, status_code=status.HTTP_201_CREATED)
 
-    {%else%}
     model.create()
     return JSONResponse(model.__dict__, status_code=status.HTTP_201_CREATED)
-    {%endif %}
 
 @router.put("/<id>", response_description="Update {{model_name}} item given id and lang", response_model={{model_name}}, status_code=201)
-async def update_{{model_name}}(id: str, model: {{model_name}}, lang : constr(regex="^(fr|en)$")="fr"):
+async def update_{{name}}(id: str, model: {{model_name}}, lang : constr(regex="^(fr|en)$")="fr"):
     doc = await {{model_name}}.get(id)
     if doc is None:
         raise HTTPException(status_code=404, detail="Item not found")
@@ -83,4 +81,3 @@ async def update_{{model_name}}(id: str, model: {{model_name}}, lang : constr(re
     updated_doc  = await doc.save()
     return JSONResponse(updated_doc, status_code=status.HTTP_204_UPDATED)
 
-{%endif%}

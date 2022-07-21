@@ -1,4 +1,5 @@
 from csv import DictReader
+import os
 from collections import defaultdict
 import logging
 from cocat.vocabulary import Vocabulary

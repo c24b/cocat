@@ -1,5 +1,5 @@
 import os
-from cocat.model import Model
+from cocat.model import Model, FilterModel, MultiLangModel
 from cocat.config_model import CSVConfig 
 from cocat.property import Property
 
@@ -109,7 +109,6 @@ def test_model_build_008():
     fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
     raw = CSVConfig(fname)
     m = Model("dataset", [r for r in raw.properties if r.model== "dataset"])
-    m.build()
     assert m.model_name == "Dataset"
     assert len(m.properties) == 27, len(m.properties)
     assert m.pydantic_model == [
@@ -136,21 +135,25 @@ def test_model_build_008():
         "millesime: Optional[List[int]]= []",
         "accrual_periodicity: Optional[List[str]]= []",
         "update_frequency: Optional[str]= None",
-        "has_georeference_dimension: Optional[bool]= None",
+        "has_geo_dimension: Optional[bool]= None",
         "spatial_coverage: Optional[List[str]]= []",
         "spatial_granularity: Optional[str]= None",
         "comment: Optional[str]= None",
     ], m.pydantic_model
 
-
+def test_model_write_008():
+    fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
+    raw = CSVConfig(fname)
+    dataset_model_a = raw.models["dataset"]
+    dataset_model_a.write_model()
+    dataset_model_a.write_router()
 def test_model_build_filter_009():
     """test building model type filter"""
     fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
     raw = CSVConfig(fname)
-    m = Model("dataset", [r for r in raw.properties if r.model== "dataset"])
-    m.build_model("filter")
+    m = FilterModel("dataset", [r for r in raw.properties if r.model== "dataset"])
     assert m.model_name == "DatasetFilter"
-    assert len(m.model_properties) == 10, len(m.model_properties)
+    assert len(m.properties) == 10, len(m.properties)
     assert m.pydantic_model == [
         'organizations: List[Organization]= []',
         'is_open_data: Optional[bool]= None', 
@@ -160,18 +163,17 @@ def test_model_build_filter_009():
         'millesime: Optional[List[int]]= []', 
         'accrual_periodicity: Optional[List[str]]= []',
         'update_frequency: Optional[str]= None',
-        'has_georeference_dimension: Optional[bool]= None',
+        'has_geo_dimension: Optional[bool]= None',
         'spatial_granularity: Optional[str]= None'], m.pydantic_model
 
 def test_model_build_multilang_010():
     """test building model type multilang"""
     fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
     raw = CSVConfig(fname)
-    m = Model("dataset", [r for r in raw.properties if r.model== "dataset"])
-    m.build_model("multilang")
-    assert m.model_name == "DatasetMultilang"
-    assert len(m.model_properties) == 17, len(m.model_properties)
-    assert m.model_properties == ['environment_detail: List[str]= []',
+    m = MultiLangModel("dataset", [r for r in raw.properties if r.model== "dataset"])
+    assert m.model_name == "DatasetMultiLang"
+    assert len(m.properties) == 17, len(m.model_properties)
+    assert m.pydantic_model == ['environment_detail: List[str]= []',
     'expositure_medium: List[str]= []',
     'usage: Optional[List[str]]= []',
     'env_agent_type: List[str]= []',
@@ -184,10 +186,10 @@ def test_model_build_multilang_010():
 'license: str= None',
 'accrual_periodicity: Optional[List[str]]= []',
 'update_frequency: Optional[str]= None',
-'has_georeference_dimension: Optional[bool]= None',
+'has_geo_dimension: Optional[bool]= None',
 'spatial_coverage: Optional[List[str]]= []',
 'spatial_granularity: Optional[str]= None',
-'comment: Optional[str]= None'], m.model_properties
+'comment: Optional[str]= None'], m.pydantic_model
 
 # def test_model_external_models():
 #     fname = os.path.join(os.path.dirname(__file__), 'properties.csv')
