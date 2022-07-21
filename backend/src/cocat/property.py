@@ -6,7 +6,6 @@ parameters to build model
 
 import datetime
 import json
-from csv import DictReader
 import logging 
 # import itertools
 # import pandas as pd
@@ -17,8 +16,8 @@ from typing import Optional
 from pydantic import BaseModel, validator, root_validator
 
 from cocat.vocabulary import Vocabulary
-from cocat.model import Model
-from cocat.db import DB
+# from cocat.model import Model
+# from cocat.db import DB
 
 LOGGER = logging.getLogger(__name__)
 # def datatype_to_pytype(datatype):
@@ -184,6 +183,8 @@ class Property(BaseModel):
         pre=True,
     )
     def strip(cls, value):
+        if value is None:
+            return value
         if isinstance(value, list):
             return [v.strip() for v in value]
         return value.strip()
@@ -237,7 +238,10 @@ class Property(BaseModel):
                     "As external_model keys are declared, external model should be specified"
                 )
             else:
-                return value.split("|")
+                if isinstance(value, str):
+                    return value.split("|")
+                else:
+                    return value
         return value
     
     @validator("vocabulary_name", pre=True)
@@ -414,7 +418,7 @@ class Property(BaseModel):
                     "analyzer": analyzer,
                 }
 
-    def get_model_property(self, lang):
+    def get_pydantic_property(self, lang):
         """Build Dataclass field line for pydantic model"""
         py_type = self.datatype_to_pytype().__name__
         if py_type == "dict" and self.external_model_name is not None:
@@ -603,58 +607,3 @@ class Property(BaseModel):
     #     }
 
 
-class CSVConfig:
-    '''System init configuration from CSV file that list all the properties for the different model list and initialize Vocabualry Properties and Models'''
-    def __init__(self, csv_file, conf_dir="./"):
-        self.csv_file = csv_file
-        
-    @property
-    def properties(self) -> list:
-        properties = []
-        with open(self.csv_file, "r") as f:
-            reader = DictReader(f, delimiter=",")
-            for row in reader:
-                r = Property.parse_obj(row)
-                properties.append(r)
-        return properties
-    @property
-    def vocabularies(self) -> dict:
-        vocabularies = dict()
-        with open(self.csv_file, "r") as f:
-            reader = DictReader(f, delimiter=",")
-            
-            
-            for row in reader:
-                if row["vocabulary_name"] is not None:
-                    vocabularies[row["vocabulary_name"]] = row["vocabulary_filename"]
-        for voc_name, voc_file in vocabularies.items():
-            if voc_file not in ["", None] and voc_name not in ["", None]:
-                voc_filepath = os.path.join(os.path.dirname(__file__),voc_file)
-                if os.path.isfile(voc_filepath):
-                    vocabularies[voc_name] = Vocabulary(name=voc_name, filename=voc_file, csv_file=voc_filepath)
-                else:
-                    LOGGER.warning(f"<Vocabulary(name={voc_name} is not initialized. Declare file doesn't exist")
-                    vocabularies[voc_name] = Vocabulary(name=voc_name)
-            
-        return vocabularies
-    
-    @property
-    def models(self) -> list:
-        models = dict()
-        d_models = defaultdict(list)
-        with open(self.csv_file, "r") as f:
-            reader = DictReader(f, delimiter=",")
-            for row in reader:
-                d_models[row["model"]].append(row)
-        for model, rules in d_models.items():
-            print(model, len(rules))
-            models[model] = Model(model, rules)
-        return models
-        #         
-        # models[row["model"]] = []
-        #     for row in reader:
-        #         models[row["model"]].append(row)
-        
-        # for model, props in models.items():
-        #     models[model] = Model(model,props)
-        # return models
