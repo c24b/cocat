@@ -1,11 +1,11 @@
 
-from asyncio.log import logger
+
 import os
 from csv import DictReader
 from typing import Optional, List
+
 from pydantic import BaseModel, validator, constr, root_validator
 import pymongo
-import logging
 from cocat.db import DB, PyObjectId
 from cocat.reference import Reference
 
@@ -130,11 +130,11 @@ class Vocabulary(BaseModel):
                 self.references.append(r)
         return self.references
 
-    def delete(self) -> None:
+    def delete(self) -> dict:
         for ref in self.references:
             ref.delete()            
-        del self.references
-        return None
+        self.references = None
+        return self
     
     def add_reference(self, reference: Reference):
         reference["lang"] = self.lang

@@ -610,45 +610,47 @@ class CSVConfig:
         self.set_properties()
         self.set_models()
 
-    
-    def set_properties(self) -> list:
+    @property
+    def properties(self) -> list:
+        properties = []
         with open(self.csv_file, "r") as f:
             reader = DictReader(f, delimiter=",")
-            vocabularies = set()
             for row in reader:
                 r = Property.parse_obj(row)
-                self.properties.append(r)
-        return self.properties
-    
-    def set_vocabularies(self) -> dict:
+                properties.append(r)
+        return properties
+    @property
+    def vocabularies(self) -> dict:
+        vocabularies = dict()
         with open(self.csv_file, "r") as f:
             reader = DictReader(f, delimiter=",")
-            self.vocabularies = dict()
+            
             
             for row in reader:
                 if row["vocabulary_name"] is not None:
-                    self.vocabularies[row["vocabulary_name"]] = row["vocabulary_filename"]
-        for voc_name, voc_file in self.vocabularies.items():
+                    vocabularies[row["vocabulary_name"]] = row["vocabulary_filename"]
+        for voc_name, voc_file in vocabularies.items():
             if voc_file not in ["", None] and voc_name not in ["", None]:
                 voc_filepath = os.path.join(os.path.dirname(__file__),voc_file)
                 if os.path.isfile(voc_filepath):
-                    self.vocabularies[voc_name] = Vocabulary(name=voc_name, filename=voc_file, csv_file=voc_filepath)
+                    vocabularies[voc_name] = Vocabulary(name=voc_name, filename=voc_file, csv_file=voc_filepath)
                 else:
                     LOGGER.warning(f"<Vocabulary(name={voc_name} is not initialized. Declare file doesn't exist")
-                    self.vocabularies[voc_name] = Vocabulary(name=voc_name)
+                    vocabularies[voc_name] = Vocabulary(name=voc_name)
             
-        return self.vocabularies
-
-    def set_models(self) -> list:
+        return vocabularies
+    @property
+    def models(self) -> list:
+        models = dict()
         with open(self.csv_file, "r") as f:
             reader = DictReader(f, delimiter=",")
             
             for row in reader:
-                self.models[row["model"]] = []
+                models[row["model"]] = []
             for row in reader:
                 r = Property.parse_obj(row)
-                self.models[row["model"]].append(r)
+                models[row["model"]].append(r)
         
-        for model, props in self.models.items():
-            self.models[model] = Model(model,props)
-        return self.models
+        for model, props in models.items():
+            models[model] = Model(model,props)
+        return models
