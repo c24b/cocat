@@ -30,7 +30,7 @@ class Model(object):
     def __init__(self, name: str, rules: list, conf_dir=os.path.dirname(__file__), lang: constr(regex="^(fr|en)$") = "fr"):
         self.name = name
         
-        self.rules = [r for r in rules if r.model == self.name]
+        self.rules = rules
         self.lang = lang
         self.conf_dir = os.path.abspath(conf_dir)
         # self.get_references()
