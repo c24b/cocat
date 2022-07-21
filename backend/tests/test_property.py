@@ -6,7 +6,8 @@ import itertools
 from pydantic import ValidationError
 import pytest
 from cocat.vocabulary import Vocabulary
-from cocat.property import Property, CSVPropertyImporter
+from cocat.property import Property
+from cocat.config_model import CSVConfig
 
     
 def test_property_init_001():
@@ -14,7 +15,7 @@ def test_property_init_001():
     test init from a fake oneliner csv
     """
     header = "field,model,name_fr,name_en,external_model_name,external_model_display_keys,datatype,vocabulary_name,vocabulary_label,vocabulary_filename,inspire,translation,multiple,constraint,datatype,format,search,filter,admin_display_order,list_display_order,item_display_order,required,description_fr,description_en,example_fr,example_en,default_fr,comment,default_en, issue_date"
-    value = """environment_detail,dataset,Milieu,Environment,vocabulary,name|id,string,environment, environment, ref_environment_detail.csv,dcat:themeTaxonomy: skos,,True,True,one of,string,,True,False,18,18,18,True,"Ce champ permet de définir le milieu concerné par la ressource à partir d'un vocabulary_labelulaire contrôlé interne",'',N/D,N/D,N/D,champ par défault en cours de construction,N/D,2022-05-22"""
+    value = """environment_detail,dataset,Milieu,Environment,vocabulary,name|id,string,environment,environment,test_ref_environment_detail.csv,dcat:themeTaxonomy: skos,,True,True,one of,string,,True,False,18,18,18,True,"Ce champ permet de définir le milieu concerné par la ressource à partir d'un vocabulary_labelulaire contrôlé interne",'',N/D,N/D,N/D,champ par défault en cours de construction,N/D,2022-05-22"""
     property_d = dict(zip(header.split(","), value.split(",")))
     assert property_d["external_model_name"] == "vocabulary"
     assert property_d["external_model_display_keys"] == "name|id"
@@ -228,7 +229,7 @@ def test_csv_import_005():
 def test_csv_import_006():
     fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
     assert "backend/tests" in fname, fname
-    c = CSVPropertyImporter(fname)
+    c = CSVConfig(fname)
     assert len(c.properties) == 52
 
 
@@ -347,7 +348,7 @@ def test_init_vocabulary_in_property_009():
 def test_vocabulary_property_010():
     fname = os.path.join(os.path.dirname(__file__), 'rules.csv')
     assert "test_rules" in fname, fname
-    c = CSVPropertyImporter(fname)
+    c = CSVConfig(fname)
     assert len(c.properties) == 52
     for prop in c.properties:
         if prop.is_vocabulary:

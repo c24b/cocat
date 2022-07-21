@@ -1,0 +1,51 @@
+{'accrual_periodicity': {'datatype': 'string',
+                         'external_model': 'vocabulary',
+                         'multiple': True,
+                         'vocabulary': Vocabulary(id=None, name=None, lang='fr', csv_file=None, filename=None, references=[], db_name='reference', standards=[])
+    },
+ 'has_geovocabulary_dimension': {'datatype': 'boolean',
+                                 'external_model': None,
+                                 'multiple': False,
+                                 'vocabulary': None
+    },
+ 'is_open_data': {'datatype': 'boolean',
+                  'external_model': None,
+                  'multiple': False,
+                  'vocabulary': None
+    },
+ 'license': {'datatype': 'string',
+             'external_model': 'vocabulary',
+             'multiple': False,
+             'vocabulary': Vocabulary(id=None, name=None, lang='fr', csv_file=None, filename=None, references=[], db_name='reference', standards=[])
+    },
+ 'media_type': {'datatype': 'string',
+                'external_model': 'vocabulary',
+                'multiple': True,
+                'vocabulary': Vocabulary(id=None, name=None, lang='fr', csv_file=None, filename=None, references=[], db_name='reference', standards=[])
+    },
+ 'millesime': {'datatype': 'integer',
+               'external_model': None,
+               'multiple': True,
+               'vocabulary': None
+    },
+ 'organizations': {'datatype': 'object',
+                   'external_model': 'organization',
+                   'multiple': True,
+                   'vocabulary': None
+    },
+ 'spatial_granularity': {'datatype': 'string',
+                         'external_model': 'vocabulary',
+                         'multiple': False,
+                         'vocabulary': Vocabulary(id=None, name=None, lang='fr', csv_file=None, filename=None, references=[], db_name='reference', standards=[])
+    },
+ 'temporal': {'datatype': 'integer',
+              'external_model': None,
+              'multiple': False,
+              'vocabulary': None
+    },
+ 'update_frequency': {'datatype': 'string',
+                      'external_model': 'vocabulary',
+                      'multiple': False,
+                      'vocabulary': Vocabulary(id=None, name=None, lang='fr', csv_file=None, filename=None, references=[], db_name='reference', standards=[])
+    }
+}

@@ -56,11 +56,11 @@ def test_vocabulary_001_existing_voc():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
     v = Vocabulary(name="environment", lang="fr", csv_file=fname)
     assert v.exists, v.exists
-    v2 = Vocabulary(name="environment", lang="fr")
-    assert v2.exists, v2.exists
     v.delete()
-    assert v2.exists is False, v2.exists
-    
+    assert v.references is None, v.references
+    v2 = Vocabulary(name="environment", lang="fr")
+    assert v2.references is not None
+
 def test_vocabulary_002_default_lang():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
     v = Vocabulary(name="environment", lang="fr", csv_file=fname)
