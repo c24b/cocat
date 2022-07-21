@@ -8,7 +8,9 @@ import datetime
 import json
 from csv import DictReader
 import logging 
-
+# import itertools
+# import pandas as pd
+from collections import defaultdict
 import os
 # import dicttoxml
 from typing import Optional
@@ -136,7 +138,7 @@ class Property(BaseModel):
     external_model_display_keys: Optional[list] = None
     vocabulary_name: Optional[str] = None
     vocabulary_filename: Optional[str] = None
-    vocabulary_label: Optional[str] = None
+    # vocabulary_label: Optional[str] = None
     inspire: Optional[str] = None
     translation: bool = False
     multiple: bool = None
@@ -176,7 +178,6 @@ class Property(BaseModel):
         "external_model_display_keys",
         "vocabulary_name",
         "vocabulary_filename",
-        "vocabulary_label",
         "format",
         "constraint",
         "inspire",
@@ -193,7 +194,6 @@ class Property(BaseModel):
         "vocabulary_name",
         "format",
         "constraint",
-        "vocabulary_label",
         "vocabulary_filename",
         "inspire",
         pre=True,
@@ -216,7 +216,7 @@ class Property(BaseModel):
         allow_reuse=True,
     )
     def cast_2_bool(cls, value):
-        """set string representaton of bool into bool"""
+        """set string representation of bool into bool"""
         if value in ["true", "True", 1]:
             return True
         if value in ["false", "False", 0]:
@@ -250,13 +250,18 @@ class Property(BaseModel):
     
     @validator("vocabulary_filename", pre=True)
     def check_vocabulary_filename(cls, value, values):
+        voc_name = values["vocabulary_name"]
         if value is not None:
+            if voc_name is None:
+                raise ValueError(
+                        f"As a filename for vocabulary {value} is declared, a name for the vocabulary should be specified"
+                    )
             if not value.endswith(".csv"):
                 return os.path.abspath(value+".csv")
             else:
                 return os.path.abspath(value)
         return value
-        
+    
 
     @validator("external_model_name")
     def check_external_model(cls, value, values, **kwargs):
@@ -602,14 +607,7 @@ class CSVConfig:
     '''System init configuration from CSV file that list all the properties for the different model list and initialize Vocabualry Properties and Models'''
     def __init__(self, csv_file, conf_dir="./"):
         self.csv_file = csv_file
-        # self.conf_dir= os.path.abspath(conf_dir)
-        self.properties = []
-        self.vocabularies = {}
-        self.models = {}
-        self.set_vocabularies()
-        self.set_properties()
-        self.set_models()
-
+        
     @property
     def properties(self) -> list:
         properties = []
@@ -639,18 +637,24 @@ class CSVConfig:
                     vocabularies[voc_name] = Vocabulary(name=voc_name)
             
         return vocabularies
+    
     @property
     def models(self) -> list:
         models = dict()
+        d_models = defaultdict(list)
         with open(self.csv_file, "r") as f:
             reader = DictReader(f, delimiter=",")
-            
             for row in reader:
-                models[row["model"]] = []
-            for row in reader:
-                r = Property.parse_obj(row)
-                models[row["model"]].append(r)
-        
-        for model, props in models.items():
-            models[model] = Model(model,props)
+                d_models[row["model"]].append(row)
+        for model, rules in d_models.items():
+            print(model, len(rules))
+            models[model] = Model(model, rules)
         return models
+        #         
+        # models[row["model"]] = []
+        #     for row in reader:
+        #         models[row["model"]].append(row)
+        
+        # for model, props in models.items():
+        #     models[model] = Model(model,props)
+        # return models
