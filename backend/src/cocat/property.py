@@ -7,9 +7,9 @@ parameters to build model
 import datetime
 import json
 from csv import DictReader
+import logging 
 
 import os
-import logging
 # import dicttoxml
 from typing import Optional
 from pydantic import BaseModel, validator, root_validator
@@ -334,8 +334,8 @@ class Property(BaseModel):
         if self.is_vocabulary and self.vocabulary_filename is not None:
             # LOGGER.warning(self.vocabulary_filename)
             v = Vocabulary(name=self.vocabulary_name, csv_file=self.vocabulary_filename)
-            if len(v.labels) == 0:
-                LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
+            # if len(v.labels) == 0:
+            #     LOGGER.warning(f"<Property(field='{self.field}'> is a reference to an empty Vocabulary.")
             return v
         return None
     
@@ -598,18 +598,57 @@ class Property(BaseModel):
     #     }
 
 
-class CSVPropertyImporter:
+class CSVConfig:
+    '''System init configuration from CSV file that list all the properties for the different model list and initialize Vocabualry Properties and Models'''
     def __init__(self, csv_file, conf_dir="./"):
-        # self.csv_file = csv_file
+        self.csv_file = csv_file
         # self.conf_dir= os.path.abspath(conf_dir)
         self.properties = []
+        self.vocabularies = {}
+        self.models = {}
+        self.set_vocabularies()
         self.set_properties()
+        self.set_models()
 
-    def set_properties(self):
+    
+    def set_properties(self) -> list:
         with open(self.csv_file, "r") as f:
             reader = DictReader(f, delimiter=",")
+            vocabularies = set()
             for row in reader:
-                # row["csv_file"] = self.csv_file
-                # row["conf_dir"] = self.conf_dir
                 r = Property.parse_obj(row)
                 self.properties.append(r)
+        return self.properties
+    
+    def set_vocabularies(self) -> dict:
+        with open(self.csv_file, "r") as f:
+            reader = DictReader(f, delimiter=",")
+            self.vocabularies = dict()
+            
+            for row in reader:
+                if row["vocabulary_name"] is not None:
+                    self.vocabularies[row["vocabulary_name"]] = row["vocabulary_filename"]
+        for voc_name, voc_file in self.vocabularies.items():
+            if voc_file not in ["", None] and voc_name not in ["", None]:
+                voc_filepath = os.path.join(os.path.dirname(__file__),voc_file)
+                if os.path.isfile(voc_filepath):
+                    self.vocabularies[voc_name] = Vocabulary(name=voc_name, filename=voc_file, csv_file=voc_filepath)
+                else:
+                    LOGGER.warning(f"<Vocabulary(name={voc_name} is not initialized. Declare file doesn't exist")
+                    self.vocabularies[voc_name] = Vocabulary(name=voc_name)
+            
+        return self.vocabularies
+
+    def set_models(self) -> list:
+        with open(self.csv_file, "r") as f:
+            reader = DictReader(f, delimiter=",")
+            
+            for row in reader:
+                self.models[row["model"]] = []
+            for row in reader:
+                r = Property.parse_obj(row)
+                self.models[row["model"]].append(r)
+        
+        for model, props in self.models.items():
+            self.models[model] = Model(model,props)
+        return self.models
