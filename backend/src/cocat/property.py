@@ -19,195 +19,181 @@ LOGGER = logging.getLogger(__name__)
 
 class Property(BaseModel):
     """
-    A class to parse metadata properties out of a Rule
-
+    A class to parse and declare metadata properties of a Model
 
     Attributes
     ----------
-    lang: str
-        default to 'fr'. Lang for fields relative to lang en or fr
-    issue_date: datetime.date
-        date of creation of the property YYYY-MM-dd
+    created_date: datetime.date
+        day of creation of the property YYYY-MM-dd
+    updated_date: datetime date
+        day of the property's last update YYYY-MM-dd
     model: str
         name of the model
     field: str
         name of the field
-    name_fr : str
-        name of the field as displayed
-    external_model_name: Optional[str]
-        name of the model the field is a reference to
-    external_model_display_keys: Optional[list]
-        list of the foreign key for the external model
-    vocabulary_name: Optional[str]
-        name of the vocabulary table that stores all the possible references
-    vocabulary_filename: Optional[str]
-        csv_file that stores the vocabulary
-    vocabulary_label: Optional[str]
-        string representation of the xml label of external vocabulary
-    inspire: Optional[str]
-        string representation of the inspire label
-    translation: bool = False
-        translate the value of the field if missing in other lang
-    multiple: bool = None
-        field accepts n values
-    datatype: str = "string"
-        type notation of the field using javascript notation.
-        accepted_datatypes = ["string","integer","object","date","datetime","integer","boolean"]
-        that determines the type property of the model for the validation, the insertion and the indexation
-    format: Optional[str]
-        additionnal information for the type such as expected date format or specific string representation (email, url...)
-    constraint: Optional[str]
-        string representation of a constraint for json model or database check
-    search: bool
-        define if the field is indexed in full text and available in search engine
-    filter: bool
-        define if the field is available to filter options
+    default_lang: str
+        Lang in wich fields are displayed : accepted 'en' or 'fr'. default to 'fr'. 
+    description: str
+        description of the field. Help Message for enduser in default_lang
+    multilang: bool
+        is the value need to be available in both language: fr and en and translated? 
+    datatype: str
+        type of the value: accepted datatype are string integer boolean, date, datetime, object. 
+        In particular case like date and datetime: format indicates the required format of date. 
+        For string we can add additional pydantic supported type: email, url
+    format: str 
+        additional type checking for field: range
+    constraint: str
+        additionnal constraint for field unique, min_lenght, max_lenght, ...
     required: bool
-        define if the field is mandatory
-    name_fr: str
-        name as displayed in the french interface
-    name_en: Optional[str] = ""
-        name as displayed in the english interface
-    description_fr: Optional[str] = ""
-        description of the field as displayed in the french interface: more informations
-    description_en: Optional[str] = ""
-        description of the field as displayed in the english interface: more informations
-    example_fr: Optional[str] = None
-        example value in french
-    example_en: Optional[str] = None
-        example value in english
-    default_fr: Optional[str] = None
-        default value in french can be used as help text or template during insertion
-    default_en: Optional[str] = None
-        default value in english can be used as help text or template during insertion
-    comment: Optional[str] = None
-        a comment on the status of the field
-
+        is the field mandatory?
+    multiple: bool
+        is the fields consists of more than one item?
+    full_text_search: bool
+        activate the full search text on this field 
+    filter: bool
+        activate the filter on this field
+    is_external_model: bool
+        does the field is a reference to another model?
+    external_model_name: str
+        if is_external_model provides the name of the model mapped with the field
+    external_model_keys: list
+        if is_external_model: foreign keys mapping with the external model
+    is_vocabulary: bool
+        does the field is a reference to a controled vocabulary?
+    vocabulary_name: str
+        if is_vocabulary specify the name of the vocabulary used
+    vocabulary_filename: str
+        if is_vocabulary  and vocabulary doesnt exists already specify the filename to store it
+    dcat_label: str
+        if is_vocabulary and vocabulary respects a dcat ap standard provides the corresponding label
+    inspire_label: str
+        if is_vocabulary has a corresponding label in INSPIRE provides the label
+    labels: list
+        when vocabulary exists or have been initialized provides the enumeration of labels of the vocabulary in english to be exported in xml
+    references: list
+        when vocabulary exists or have been initialized provides the enumeration of labels of the vocabulary in the default lang for enduser
+    uris: list
+        when vocabulary exists or have been initialized provides the enumeration of uris of the vocabulary in the default lang
+    example: str
+        example of the value expected used in API as demo
+    default: str
+        default value expected if not specified can be used as a proposal for enduser and as default value at model generation.
 
     Methods
     -------
-
-    datatype_to_pytype: str
-        use datatype to cast datatype from json notation to pydantic notation. Only [string, int, bool, dict] are acepted
-
-    _convert:
-
-    _export:
+    datatype_to_pytype
+    export
 
     Properties
     -------
-    is_vocabulary:
-
-    vocabulary:
-
-    labels:
-
-    labels_by_lang:
-
-    is_external_model:
-
-    external_model:
-
-    mapping:
-
-    display:
-
-    example_by_lang:
-    example
-    default_by_lang:
-    default:
-    field_by_lang:
-    py:
-
-    json:
+    
+    mapping
+    py
+    json
     json_schema:
-    model:
+    xml
+
     """
-    lang: Optional[str] = "fr"
-    issue_date: datetime.date = datetime.date.today()
-    model: str = None
-    field: str = None
-    lang: str = "fr"
-    external_model: Optional[str] 
-    external_model_name: Optional[Union[str, None]] 
-    external_model_display_keys: Optional[list] = ["id", "name"]
-    is_external_model: Optional[bool] = False
-    vocabulary_name: Optional[str] 
-    is_vocabulary: Optional[bool] = False
-    vocabulary_filename: Optional[str]
-    vocabulary_label: Optional[str] = None
-    labels: Optional[list]
-    inspire: Optional[str] = None
-    translation: bool = False
-    multiple: bool = False
+    created_date: datetime.date = datetime.date.today()
+    updated_date: datetime.date = datetime.date.today()
+    model: str 
+    field: str 
+    default_lang: str = "fr"
+    multilang: bool = False
     datatype: str = "string"
     format: Optional[str] = None
     constraint: Optional[str] = None
-    search: bool = False
-    is_searchable: Optional[bool]
-    filter: bool = False
-    has_filter: Optional[bool]
     required: bool = True
-    name_fr: str
-    name_en: Optional[str]
-    description_fr: Optional[str]
-    description_en: Optional[str]
-    example_fr: Optional[str] = None
-    example_en: Optional[str] = None
-    default_fr: Optional[str] = None
-    default_en: Optional[str] = None
-    comment: Optional[str] = None
+    multiple: bool = False
+    search_full_text: bool = False
+    filter_values: bool = False
+    is_external_model: bool = False
+    external_model_name: Optional[str]
+    external_model_keys: Optional[list]
+    is_vocabulary: bool = False
+    vocabulary_name: str = None 
+    filename: str = None
+    dcat_label: Optional[str]
+    inspire_label: Optional[str]
+    labels: Optional[list]
+    references: Optional[list]
+    uris: Optional[list]
+    name: Optional[str]
+    description: Optional[str]
+    example: Optional[str]
+    default: Optional[str]
+    
+    @validator("created_date", "updated_date", pre=True)
+    def check_date_format(cls, value):
+        return datetime.datetime.strptime(
+            value,
+            "%d/%m/%Y"
+        ).date()
+
+    @validator("field", "model", pre=True, allow_reuse=True)
+    def snake_case(cls, value):
+        tmp = ""
+        for c in value.lower():
+            if c.isalnum:
+                tmp += c
+            else:
+                tmp += "_"    
+        return tmp
+
+    @validator("default_lang", pre=True)
+    def check_lang_is_supported(cls, value, values):
+        # supported_languages = {"fr": "en", "en": "fr"} 
+        if value not in ["en", "fr"]:
+        # if value not in list(supported_languages.keys()):
+            raise ValueError(
+                    f"Lang {value} is not supported. Languages supported are French (default) fr and English en")
+        # values["other_lang"] = supported_languages[value]
+        return value
+
     
     @validator(
+        "model",
+        "field",
+        "datatype",
         "external_model_name",
-        "external_model_display_keys",
         "vocabulary_name",
-        "vocabulary_filename",
-        "vocabulary_label",
-        "inspire",
-        "name_en",
+        "filename",
+        "dcat_label",
+        "inspire_label",
+        "example",
+        "default",
+        "external_model_keys",
+        "labels",
+        "references",
+        "uris",
         pre=True,
         allow_reuse=True,
     )
-    def strip(cls, value):
+    def strip_str(cls, value):
+        """strip string"""
         if value is None:
             return value
         if isinstance(value, list):
             return [v.strip() for v in value]
         return value.strip()
 
-    @validator(
-        "external_model_name",
-        "external_model_display_keys",
-        "vocabulary_name",
-        "vocabulary_filename",
-        "vocabulary_label",
-        "inspire",
-        "name_en",
-        "name_fr",
-        "description_en",
-        "description_fr",
-        pre=True,
-        allow_reuse=True,
-    )
-    def if_empty_set_to_none(cls, value):
-        """set empty string to None"""
-        if value == "":
-            return None
-        else:
-            return value
+    # def if_empty_set_to_none(cls, value):
+    #     """set empty string to None"""
+    #     if value == "":
+    #         return None
+    #     else:
+    #         return value
 
-    @validator(
-        "search",
-        "filter",
+    @validator(    
+        "multilang",
         "required",
         "multiple",
-        "translation",
+        "search_full_text",
+        "filter_values", 
         "is_external_model",
         "is_vocabulary",
-        "is_searchable",
-        "has_filter",
-        pre=True)
+        pre=True, allow_reuse=True)
     def cast_2_bool(cls, value):
         """set string representation of bool into bool"""
         if value in ["true", "True", 1]:
@@ -232,70 +218,80 @@ class Property(BaseModel):
             raise ValueError(f"datatype must be in {accepted_datatypes}")
         return value
     
-    @validator("lang", pre=True)
-    def check_lang_is_supported(cls, value):
-        if value not in ["fr", "en"]:
-            raise ValueError(
-                    f"Lang {value} is not supported. Languages supported are French (default) fr and English en")
+    @validator("external_model_name", "external_model_keys", pre=True)
+    def check_external_model(cls, value, values):
+        if values["is_external_model"]:
+            if value == "":
+                raise ValueError(
+                    f"Field is declared as an external model you must provide the name and the keys for the external model"
+                )
         return value
-    @validator("external_model_name", pre=True)
-    def set_is_external_model(cls, external_model_name, values):
-        if external_model_name is not None:
-            if external_model_name != "vocabulary":
-                values["is_external_model"] = True
-                return values
-        else:
-            values["is_external_model"] = False
-            return values
+                
+    # @validator("vocabulary_name", pre=True)
+    # def set_vocabulary_name(cls, value, values):
+    #     if values["is_vocabulary"]:
+    #         if value == "" or value is None:
+    #             raise ValueError(
+    #                 f"Field is declared as a vocabulary: you must provide the name of the vocabulary"
+    #             )
+        
+    #     return value
     
-    @validator("vocabulary_name", pre=True, allow_reuse=True)
-    def set_vocabulary_name(cls, value, values):
-        if value is not None and values["external_model_name"] == "vocabulary":
-            values["is_vocabulary"] = True
-            
-        else:
-            values["is_vocabulary"] = False
-            
-        if value is None and values["external_model_name"] == "vocabulary":
-            raise ValueError(
-                    f"Vocabulary name is not declared but external_model_name is set to Vocabulary"
-                )
-        elif value is None and values["vocabulary_filename"] is not None:
-            raise ValueError(
-                    f"Vocabulary name is not declared but external_file is declared"
-                )
-        # else:
-            # if values["vocabulary_filename"] is not None:
-            #     v = Vocabulary(value, csv_file= values["vocabulary_filename"])
-            #     values["labels"] = v.labels   
-            # else:
-            #     v = Vocabulary(value)
-            #     values["labels"] = v.labels
-        return values
-          
-    @validator("vocabulary_filename")
-    def check_voc_name_with_filename(cls, value, values):
-        # value  = values["vocabulary_filename"]
-        value = os.path.join(os.path.dirname(__file__), value)
-        if  os.path.isfile(value) is False:
-            raise ValueError(
-                f"File not found error: `{value}`."
-                )    
-        else:
-            v = Vocabulary(values["vocabulary_name"], csv_file= value)
-            values["labels"] = v.labels   
-        return values
-   
-            
+    # @validator("filename", pre=True)
+    # def check_voc_name_with_filename(cls, value, values):
+    #     if values["is_vocabulary"]:
+    #         if value == "" or value is None:
+    #             raise ValueError(
+    #                 f"Field is declared as a vocabulary: vocabulary as to be initialized with a csv file"
+    #             )
+    #         else:
+                    
+    #             value = os.path.join(os.path.dirname(__file__), value)
+    #             if  os.path.isfile(value) is False:
+    #                 raise ValueError(
+    #                     f"File not found error: `{value}`."
+    #                     )    
+    #             else:
+    #                 return value                   
+    #     return value
     
-    @validator("vocabulary_name", pre=True)
-    def check_is_vocabulary(cls, value, values):
-        if value is not None and values["external_model_name"] == "vocabulary":
-            values["is_vocabulary"] = True
-        else:
-            values["is_vocabulary"] = False
+    @root_validator
+    def init_vocabulary(cls, values):
+        if "is_vocabulary" not in values:
+            raise ValueError("No is_vocabulary")
+        if values["is_vocabulary"]:
+            if "vocabulary_name" not in values:
+                raise ValueError("Field is declared as a vocabulary and no vocabulary name has been provided. Set `vocabulary_name` ")
+            elif values["vocabulary_name"] is not None:
+                
+                v = Vocabulary(values["vocabulary_name"])
+                if not v.exists():
+                    if "filename" not in values:
+                        raise ValueError(
+                            f"Field is declared as a vocabulary: vocabulary as to be initialized with a csv file. Set `filename`"
+                        )   
+                    else:
+                        if values["filename"] is None:
+                            raise ValueError(
+                                f"Field is declared as a vocabulary: vocabulary as to be initialized with a csv file. Set `filename`"
+                            )
+                        else:
+                            filename = os.path.join(os.path.dirname(__file__), values["filename"])
+                            if  os.path.isfile(filename) is False:
+                                raise ValueError(
+                                    f"File not found error: `{filename}`."
+                                )
+                            v = Vocabulary(values["vocabulary_name"], csv_file=values["filename"])
+                            values["labels"] = v.labels
+                            values["references"] = v.get_labels_by_lang(values["default_lang"])
+                            values["uris"] = v.uris
+                else:
+                    values["labels"] = v.labels
+                    values["references"] = v.get_labels_by_lang(values["default_lang"])
+                    values["uris"] = v.uris
+            else:
+                raise ValueError("Field is declared as a vocabulary and no vocabulary name has been provided. Set `vocabulary_name` ")
         return values
-    
     # @property
     # def index_mapping(self, lang):
     #     """given type and lang returns mapping properties for index"""

@@ -9,139 +9,154 @@ from cocat.vocabulary import Vocabulary
 from cocat.property import Property
 from cocat.config_model import CSVConfig
 
+
 def test_property_init_000_simple():
     """
-    test init from a json with only mandatory fields + example
+    test init from a json with only mandatory fields + name and example
     """
     property = {
-        "model":"user",
-        "field":"name",
+        "default_lang": "fr",
+        "model": "user",
+        "field": "name",
         "datatype": "string",
-        "translation": False,
-        "multiple": False,
-        "search": True,
-        "filter": False, 
-        "required": True,
-        "name_fr": "Nom",
-        "name_en": "Name",
-        "example_fr": "Pierre Durand"
-        }
+        "multilang": "False",
+        "multiple": "False",
+        "search_full_text": "True",
+        "filter_values": "False",
+        "required": "True",
+        "name": "Nom",
+        "example": "Pierre Durand",
+    }
     p = Property.parse_obj(property)
     assert p.model == "user"
     assert p.field == "name"
     assert p.datatype == "string"
     assert p.required is True
-    assert p.search is True
+    assert p.search_full_text is True
+    assert p.filter_values is False
+    assert p.default_lang == "fr"
+
 
 def test_propert_init_001_wrong_datatype_for_search():
+    model: str
+    field: str
+    default_lang: str = "fr"
+    multilang: bool = False
+    datatype: str = "string"
+    required: bool = True
+    multiple: bool = False
+    search_full_text: bool = False
+    filter_values: bool = False
+    is_external_model: bool = False
+    is_vocabulary: bool = False
     property = {
-        "model":"user",
-        "field":"name",
+        "model": "user",
+        "field": "name",
+        "default_lang": "fr",
         "datatype": "integer",
-        "translation": False,
+        "multilang": False,
         "multiple": False,
-        "search": True,
-        "filter": False, 
+        "search_full_text": True,
+        "filter_values": False,
         "required": True,
-        "name_fr": "Nom",
-        "example_fr": "Pierre Durand"
-        }
-    
-    
+        "name": "Nom",
+        "example": "Pierre Durand",
+        "is_external_model": False,
+        "is_vocabulary": False,
+    }
+
     with pytest.raises(ValidationError) as exc_info:
         Property(**property)
     assert exc_info.value.errors() == [
         {
-            'loc': ('search',),
-            'msg': "name search option is set to True, it can't be index in full text: "
-            'invalid integer. Set search option to False',
-            'type': 'value_error'
+            "loc": ("search",),
+            "msg": "name search option is set to True, it can't be index in full text: "
+            "invalid integer. Set search option to False",
+            "type": "value_error",
         }
     ]
 
+
 def test_propert_init_001_wrong_filter():
     property = {
-        "model":"user",
-        "field":"name",
+        "model": "user",
+        "field": "name",
         "datatype": "string",
         "translation": False,
         "multiple": False,
-        "search": False,
-        "filter": True, 
+        "search_full_text": False,
+        "filter_values": True,
         "required": True,
         "name_fr": "Nom",
-        "example_fr": "Pierre Durand"
-        }
-    
-    
+        "example_fr": "Pierre Durand",
+    }
+
     with pytest.raises(ValidationError) as exc_info:
         Property(**property)
     assert exc_info.value.errors() == [
         {
-            'loc': ('filter',),
-            'msg': "name can't be filtered as it consists of a free text . Filter should be executed on a following datatype: an integer, date range or on an external_model value or on vocabulary labels",
-            'type': 'value_error'
+            "loc": ("filter",),
+            "msg": "name can't be filtered as it consists of a free text . Filter should be executed on a following datatype: an integer, date range or on an external_model value or on vocabulary labels",
+            "type": "value_error",
         }
     ], exc_info.value.errors()
+
 
 def test_propert_init_002_vocabulary_declaration():
     property = {
-        "model":"dataset",
-        "field":"updated_frequency",
+        "model": "dataset",
+        "field": "updated_frequency",
         "datatype": "string",
-        "translation": True,
+        "multilang": True,
         "multiple": True,
-        "search": False,
-        "filter": True, 
+        "search_full_text": False,
+        "filter_values": True,
         "required": False,
-        "name_fr": "Fréquence de mise à jour",
-        "example_fr": "Mensuelle|Bi-hebdomadaire",
+        "name": "Fréquence de mise à jour",
+        "example": "Mensuelle|Bi-hebdomadaire",
+        "is_vocabulary": True,
         "vocabulary_name": None,
-        "vocabulary_filename": "vocabularies/frequency.csv",
-        "vocabulary_label": "freq:"
-        }
+        "filename": "vocabularies/frequency.csv",
+        "dcat_label": "freq:",
+    }
     with pytest.raises(ValidationError) as exc_info:
         Property(**property)
     assert exc_info.value.errors() == [
-        {   
-            'loc': ('vocabulary_filename',),
-            'msg': 'As a filename for vocabulary vocabularies/frequency.csv is declared, a name for the vocabulary should be specified',
-            'type': 'value_error'
-        },
-        {'loc': ('filter',),
-        'msg': "updated_frequency can't be filtered as it consists of a free text . "
-            'Filter should be executed on a following datatype: an integer, date '
-            'range or on an external_model value or on vocabulary labels',
-        'type': 'value_error'}
+        {
+            "loc": ("__root__",),
+            "msg": "Field is declared as a vocabulary and no vocabulary name has been "
+            "provided. Set `vocabulary_name` ",
+            "type": "value_error",
+        }
     ], exc_info.value.errors()
+
 
 def test_propert_init_003_vocabulary_declaration():
     property = {
-        "model":"dataset",
-        "field":"updated_frequency",
+        "model": "dataset",
+        "field": "updated_frequency",
         "datatype": "string",
-        "translation": True,
+        "multilang": True,
         "multiple": True,
-        "search": False,
-        "filter": True, 
+        "search_full_text": False,
+        "filter_values": True,
         "required": False,
-        "name_fr": "Fréquence de mise à jour",
-        "external_model_name": "vocabulary",
-        "example_fr": "Mensuelle|Bi-hebdomadaire",
+        "name": "Fréquence de mise à jour",
+        "example": "Mensuelle|Bi-hebdomadaire",
+        "is_vocabulary": True,
         "vocabulary_name": "frequency",
-        "vocabulary_filename": "vocabularies/frequency.csv",
-        "vocabulary_label": "freq:"
-        }
+        "filename": "vocabularies/frequency.csv"
+    }
     p = Property(**property)
-    assert p.vocabulary_name is not None
-    assert p.external_model_name == "vocabulary"
+    assert p.required is True
     assert p.is_vocabulary == True, p.is_vocabulary
-    
+
+
 # def test_property_init_001():
 #     """
 #     test init from a fake oneliner csv
 #     """
-#     header = "field,model,name_fr,name_en,external_model_name,external_model_display_keys,datatype,vocabulary_name,vocabulary_filename,vocabulary, inspire,translation,multiple,constraint,datatype,format,search,filter,admin_display_order,list_display_order,item_display_order,required,description_fr,description_en,example_fr,example_en,default_fr,comment,default_en, issue_date"
+#     header = "field,model,name_fr,name_en,external_model_name,external_model_display_keys,datatype,vocabulary_name,filename,vocabulary, inspire,translation,multiple,constraint,datatype,format,search,filter,admin_display_order,list_display_order,item_display_order,required,description_fr,description_en,example_fr,example_en,default_fr,comment,default_en, issue_date"
 #     value = """environment_detail,dataset,Milieu,Environment,vocabulary,name|id,string,environment,test_ref_environment_detail.csv,dcat:themeTaxonomy: skos,,True,True,one of,string,,True,False,18,18,18,True,"Ce champ permet de définir le milieu concerné par la ressource à partir d'un vocabulary_labelulaire contrôlé interne",'',N/D,N/D,N/D,champ par défault en cours de construction,N/D,2022-05-22"""
 #     property_d = dict(zip(header.split(","), value.split(",")))
 #     assert property_d["external_model_name"] == "vocabulary"
@@ -299,7 +314,7 @@ def test_propert_init_003_vocabulary_declaration():
 #     "search": "True",
 #     "filter": "False",
 #     "name_fr": "Mots clés",
-    
+
 #     "field": "tags",
 #     "model": "dataset",
 #     "datatype": "string",
@@ -334,8 +349,8 @@ def test_propert_init_003_vocabulary_declaration():
 #         r = Property.parse_obj(property_d_1)
 #     error = str(excinfo.value).split("\n")
 #     assert error == [
-#         '1 validation error for Property', 
-#         'external_model_display_keys', 
+#         '1 validation error for Property',
+#         'external_model_display_keys',
 #         "  As external_model keys are declared, external model should be specified "
 #         "(type=value_error)"
 #         ], error
@@ -393,7 +408,7 @@ def test_propert_init_003_vocabulary_declaration():
 #         }
 #     r = Property.parse_obj(property_d)
 #     assert r.is_vocabulary is True, r.is_vocabulary
-    
+
 # def test_empty_vocabulary_in_property_008():
 #     property_d = {' issue_date': '2022-05-22',
 #     'admin_display_order': '18',
@@ -459,7 +474,7 @@ def test_propert_init_003_vocabulary_declaration():
 #     'name_en': 'Environment',
 #     'name_fr': 'Milieu',
 #     'vocabulary_name': 'environment',
-#     'vocabulary_filename': 'vocabularies/environment.csv',
+#     'filename': 'vocabularies/environment.csv',
 #     'required': 'True',
 #     'search': 'True',
 #     'translation': 'True',
