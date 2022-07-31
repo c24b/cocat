@@ -36,10 +36,10 @@ class Vocabulary(BaseModel):
         retrieve the value of
     """
     id: Optional[PyObjectId] = None
-    name: str = None
+    name: str 
     lang: constr(regex="^(fr|en)$") = "fr"
     csv_file: Optional[str] = None
-    filename: Optional[str]
+    filename: Optional[str] = None
     references: Optional[List[Reference]] = [ ]
     db_name: Optional[str] = "reference"
     standards: Optional[List] = []
@@ -49,8 +49,8 @@ class Vocabulary(BaseModel):
     def create_from_csv_file(cls, values) -> dict:
         if values["csv_file"] is not None:
             values["filename"] = os.path.basename(values["csv_file"]) 
-            exists = os.path.isfile(values["csv_file"])
-            if not exists:
+            values["exists"] = os.path.isfile(values["csv_file"])
+            if not values["exists"]:
                 raise ValueError(f"Vocabulary Error. File Not Found Error: {values['csv_file']} doesn't exists.")
             else: 
                 with open(values["csv_file"], "r") as f:
@@ -66,19 +66,20 @@ class Vocabulary(BaseModel):
                         r = Reference.parse_obj(row)
                         r.add()
                         values["references"].append(r)
-            #values["exists"] = True
+                values["exists"] = True
         return values
    
-    @root_validator
-    def cast_references(cls, values) -> dict:
-        if len(values["references"]) > 0:
-            # logger.warning(values["references"])
-            #values["exists"] = True
-            if not isinstance(values["references"][0], Reference): 
-                #logger.warning(values["references"][0])
-                values["references"] = [ Reference(**r) for r in values["references"]]
-            
-        return values
+    # @root_validator
+    # def cast_references(cls, values) -> dict:
+    #     if len(values["references"]) > 0:
+    #         # logger.warning(values["references"])
+    #         #values["exists"] = True
+    #         if not isinstance(values["references"][0], Reference): 
+    #             #logger.warning(values["references"][0])
+    #             values["references"] = [ Reference(**r) for r in values["references"]]
+    #     else:
+    #         values["references"] = cls.get_references()
+    #     return values
     
     @root_validator
     def set_references(cls, values) -> dict:
@@ -87,6 +88,10 @@ class Vocabulary(BaseModel):
             if refs is not None:
                 values["references"] = [ Reference(**r).add() for r in refs]
                 # values["exists"] = True
+        else:
+            if not isinstance(values["references"][0], Reference): 
+                #logger.warning(values["references"][0])
+                values["references"] = [ Reference(**r) for r in values["references"]]
         # if len(values["references"]) > 0:
         #     values["references"] = [ Reference(**r) for r in values["references"]]
         return values
@@ -96,26 +101,28 @@ class Vocabulary(BaseModel):
         values["exists"] = len(values["references"]) > 0 
         return values
     
-    @property
-    def labels(self) -> list:
-        return [r.label for r in self.references]
-
-    @property
-    def names_en(self) -> list:
-        return [r.name_en for r in self.references]
-
-    @property
-    def names_fr(self) -> list:
-        return [r.name_fr for r in self.references]
-
-    @property
-    def uris(self) -> list:
-        return [r.uri for r in self.references if r.uri is not None]
     
-    # @property
-    # def exists(self) -> bool:
-    #     assert len(self.references) > 0
+    @root_validator
+    def set_labels(cls, values) -> dict:
+        if values["exists"]:
+            values["labels"] = [r.label for r in values["references"]]
+        else:
+            values["labels"] = []
+        return values
 
+    @root_validator
+    def set_names_en(cls, values) -> dict:
+        values["names_en"] = [r.name_en for r in values["references"]]
+        return values
+    @root_validator
+    def set_names_fr(cls, values) -> dict:
+        values["names_fr"] = [r.name_fr for r in values["references"]]
+        return values
+    @root_validator
+    def set_uris(cls, values) -> dict:
+        values["uris"] = [r.uri for r in values["references"] if r.uri is not None]
+        return values
+    
     def create(self, csv_file) -> list:
         self.filename = os.path.basename(csv_file)
         self.references = []

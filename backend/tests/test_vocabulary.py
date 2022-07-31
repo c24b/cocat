@@ -13,15 +13,21 @@ def test_vocabulary_000_init_with_csv():
     assert v.names_fr == v.labels
     assert len(v.references) == 4, len(v.references)
     assert list(v.references[0].__dict__.keys()) == [
-        'id','vocabulary',
+        'id',
+        'vocabulary',
+        'field',
         'name_en',
         'name_fr',
+        'label',
         'uri',
         'slug',
         'lang',
         'updated',
         'standards',
-        '_id'], list(v.references[0].__dict__.keys())
+        'name',
+        'xml',
+        'exists', "_id"
+    ], list(v.references[0].__dict__.keys())
     v.delete()
 
 def test_vocabulary_000_init_with_jsonl():
@@ -36,20 +42,28 @@ def test_vocabulary_000_init_with_jsonl():
             references.append(row)
     assert references[0] == {'file': 'test_ref_environment.csv', 'lang': 'fr', 'name_en': 'Air', 'name_fr': 'Air', 'slug': 'air','uri': 'http://dcat-ap.ch/vocabulary/themes/air','vocabulary': 'environment'}, references[0]
     v = Vocabulary(name="environment", lang="fr", references=references)
+    assert v.exists is True
     assert v.name == "environment"
     assert v.lang == "fr"
     assert v.labels ==  ['Air', 'Eau', 'Sols', 'Alimentation'], v.labels
     assert v.names_fr == v.labels
     assert len(v.references) == 4, len(v.references)
     assert list(v.references[0].__dict__.keys()) == [
-        'id','vocabulary',
+        'id',
+        'vocabulary',
+        'field',
         'name_en',
         'name_fr',
+        'label',
         'uri',
         'slug',
         'lang',
         'updated',
-        'standards'], list(v.references[0].__dict__.keys())
+        'standards',
+        'name',
+        'xml',
+        'exists'
+    ], list(v.references[0].__dict__.keys())
     v.delete()
 
 def test_vocabulary_001_existing_voc():
@@ -97,17 +111,7 @@ def test_voc_003_get_labels():
     assert labels_en == ['Air', 'Water', 'Soils', 'Food'], labels_en
     v.delete()  
 
-def test_voc_004_get_previous_refs():
-    fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
-    v = Vocabulary(name="environment", lang="fr")
-    v.delete()
-    v.create(csv_file=fname)
-    v2 = Vocabulary(name="environment", lang="en")
-    assert len(v2.references) == 4
-    v.delete()
-    assert DB.reference.count_documents({"vocabulary": "environment"}) == 0, DB.reference.count_documents({"vocabulary": "environment"})
-
-def test_voc_005_declared_csv():
+def test_voc_004_declared_csv():
     fname = os.path.join(os.path.dirname(__file__), 'test_ref_environment.csv')
     v = Vocabulary(name="environment", lang="en", csv_file=fname)
     assert len(v.references) == 4

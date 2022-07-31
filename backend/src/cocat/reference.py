@@ -5,8 +5,7 @@ Reference
 from datetime import datetime
 
 from typing import Optional, List
-from pydantic import BaseModel, validator, constr
-
+from pydantic import BaseModel, validator, constr, root_validator
 import pymongo
 import logging
 from cocat.db import DB, PyObjectId
@@ -54,49 +53,56 @@ class Reference(BaseModel):
     updated: str = datetime.today().strftime("%Y-%m-%d")
     standards: Optional[List] = []
 
-    @property
-    def field(self):
-        return self.vocabulary.replace("ref_", "")
-
-    @property
-    def label(self):
-        if self.lang == "en":
-            return self.name_en
-        return self.name_fr
-
-    @property
-    def name(self):
-        if self.lang == "en":
-            return self.name_en
-        return self.name_fr
-
-    @property
-    def xml(self):
-        return f'''<{self.field}>
-                <name>{self.name_en}</name>
-                <description></description>
-                <update date="{self.updated}"/>
-            </{self.field}>
-        '''
-    @property
-    def exists(self)-> bool:
-        return self.get_by_label(self.label) is not None
     
-    def add(self) -> tuple:    
-        exists = self.get_by_label(self.label)
+    @root_validator
+    def set_label(cls, values):
+        if values["lang"] == "en":
+            values["label"] = values["name_en"]
+        
+        else:
+            values["label"] = values["name_fr"]
+        return values
+
+
+    @root_validator
+    def set_name(cls, values):
+        if values["lang"] == "en":
+            values["name"] = values["name_en"]
+        
+        else:
+            values["name"] = values["name_fr"]
+        return values
+
+    @root_validator
+    def set_xml(cls, values):
+        values["xml"] = f'''<{values["field"]}>
+                <name>{values["name_en"]}</name>
+                <description></description>
+                <update date="{values["updated"]}"/>
+            </{values["field"]}>
+        '''
+        return values
+
+    @root_validator
+    def exists(cls, values):
+        values["exists"] = values["label"] is not None
+        return values
+
+    def add(self) -> bool:    
+        exists = self.get_by_label(self.name)
         if exists is not None:
-            # LOGGER.warning(f"<Reference(name='{self.label}'> already exists.")
+            LOGGER.warning(f"<Reference(name='{self.label}'> already exists.")
             self.id = exists["_id"]
-            return False, self.id
+            return False
         else:
             self.id = DB.reference.insert_one(self.__dict__).inserted_id
-            return True, self.id
-
-    def update(self, update_reference: dict) -> tuple:
+            return True
+    
+    def update(self, update_reference: dict) -> bool:
         if self.id is None:
             LOGGER.warning(
                 f"<Reference(name='{self.label}'> doesn't exists.")
-            return False, None
+            return False
         else:
             invalid_keys = []
             exists = self.get_by_id(self.id)
@@ -107,17 +113,17 @@ class Reference(BaseModel):
                     invalid_keys.append(k)
                     pass
             DB.reference.update_one({"_id": exists["_id"]}, {"$set": {k: v for k, v in update_reference.items() if k not in invalid_keys}})
-            return True, self.id
+            return True
             
-    def delete(self) -> tuple:
+    def delete(self) -> bool:
         exists = self.get_by_label(self.name)
         if exists is None:
             LOGGER.warning(f"<Reference(name='{self.name}'> doesn't exist.")
-            return False, None
+            return False
         else:
             self.id = exists["_id"]
             DB.reference.delete_one({"_id": self.id})
-            return True, self.id
+            return True
         
     def get_by_id(self, id) -> dict:
         ref = DB.reference.find_one({"_id": id})
