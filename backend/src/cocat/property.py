@@ -14,8 +14,11 @@ from pydantic import BaseModel, validator, root_validator, constr
 
 from cocat.vocabulary import Vocabulary
 # from cocat.model import Model
+from pydantic.dataclasses import dataclass
+
 
 LOGGER = logging.getLogger(__name__)
+
 
 class Property(BaseModel):
     """
@@ -111,9 +114,9 @@ class Property(BaseModel):
     is_external_model: bool = False
     external_model_name: Optional[str]
     external_model_keys: Optional[list]
-    is_vocabulary: bool = False
-    vocabulary_name: str = None 
-    filename: str = None
+    is_vocabulary: Optional[bool] = False
+    vocabulary_name: Optional[str] = None 
+    filename: Optional[str] = None
     dcat_label: Optional[str]
     inspire_label: Optional[str]
     labels: Optional[list]
@@ -124,6 +127,11 @@ class Property(BaseModel):
     example: Optional[str]
     default: Optional[str]
     
+    @validator("external_model_keys", pre=True)
+    def cast_2_list(cls, value):
+        if not isinstance(value, list):
+            return value.split("|")
+        return value
     @validator("created_date", "updated_date", pre=True)
     def check_date_format(cls, value):
         return datetime.datetime.strptime(
@@ -178,12 +186,12 @@ class Property(BaseModel):
             return [v.strip() for v in value]
         return value.strip()
 
-    # def if_empty_set_to_none(cls, value):
-    #     """set empty string to None"""
-    #     if value == "":
-    #         return None
-    #     else:
-    #         return value
+    def if_empty_set_to_none(cls, value):
+        """set empty string to None"""
+        if value == "":
+            return None
+        else:
+            return value
 
     @validator(    
         "multilang",
@@ -218,14 +226,14 @@ class Property(BaseModel):
             raise ValueError(f"datatype must be in {accepted_datatypes}")
         return value
     
-    @validator("external_model_name", "external_model_keys", pre=True)
-    def check_external_model(cls, value, values):
-        if values["is_external_model"]:
-            if value == "":
-                raise ValueError(
-                    f"Field is declared as an external model you must provide the name and the keys for the external model"
-                )
-        return value
+    # @validator("external_model_name", "external_model_keys", pre=True)
+    # def check_external_model(cls, value, values):
+    #     if values["is_external_model"]:
+    #         if value == "" or value is None:
+    #             raise ValueError(
+    #                 f"Field is declared as an external model you must provide the name and the keys for the external model"
+    #             )
+    #     return value
                 
     # @validator("vocabulary_name", pre=True)
     # def set_vocabulary_name(cls, value, values):
@@ -254,43 +262,48 @@ class Property(BaseModel):
     #             else:
     #                 return value                   
     #     return value
-    
+    @root_validator
+    def check_external_model(cls, values):
+        if values["is_external_model"] is True:
+            if values["external_model_name"] is None and values["external_model_keys"] is None:
+                raise ValueError(
+                        f"Field is declared as an external model reference. Set external_model_name and external_model_keys"
+                    )
+            elif values["external_model_name"] is None:
+                raise ValueError(
+                        f"Field is declared as an external model reference. Set external_model_name "
+                    )
+            elif values["external_model_keys"] is None:
+                raise ValueError(
+                        f"Field is declared as an external model reference. Set external_model_keys "
+                    )
+        return values
+
     @root_validator
     def init_vocabulary(cls, values):
-        if "is_vocabulary" not in values:
-            raise ValueError("No is_vocabulary")
-        if values["is_vocabulary"]:
-            if "vocabulary_name" not in values:
-                raise ValueError("Field is declared as a vocabulary and no vocabulary name has been provided. Set `vocabulary_name` ")
-            elif values["vocabulary_name"] is not None:
-                
-                v = Vocabulary(values["vocabulary_name"])
-                if not v.exists():
-                    if "filename" not in values:
-                        raise ValueError(
-                            f"Field is declared as a vocabulary: vocabulary as to be initialized with a csv file. Set `filename`"
-                        )   
-                    else:
-                        if values["filename"] is None:
-                            raise ValueError(
-                                f"Field is declared as a vocabulary: vocabulary as to be initialized with a csv file. Set `filename`"
-                            )
-                        else:
-                            filename = os.path.join(os.path.dirname(__file__), values["filename"])
-                            if  os.path.isfile(filename) is False:
-                                raise ValueError(
-                                    f"File not found error: `{filename}`."
-                                )
-                            v = Vocabulary(values["vocabulary_name"], csv_file=values["filename"])
-                            values["labels"] = v.labels
-                            values["references"] = v.get_labels_by_lang(values["default_lang"])
-                            values["uris"] = v.uris
+        if values["is_vocabulary"] is True:
+            if values["vocabulary_name"] is not None:
+                if values["filename"] is None: 
+                # and values["references"] is None:
+                    raise ValueError(
+                        f"Field is declared as a vocabulary: vocabulary as to be initialized throuoght a csv file or a set of references. Set `filename` or references."
+                    )
                 else:
+                    filename = os.path.join(os.path.dirname(__file__), values["filename"])
+                    if  os.path.isfile(filename) is False:
+                        raise ValueError(
+                            f"File not found error: `{filename}`."
+                        )
+                    v = Vocabulary(name=values["vocabulary_name"], csv_file=values["filename"])
                     values["labels"] = v.labels
                     values["references"] = v.get_labels_by_lang(values["default_lang"])
                     values["uris"] = v.uris
+                    return values
             else:
                 raise ValueError("Field is declared as a vocabulary and no vocabulary name has been provided. Set `vocabulary_name` ")
+        else:
+            if values["vocabulary_name"] is not None:
+                raise ValueError("Field has a vocabulary name and is not declared as a vocabulary. Set `is_vocabulary` to True. ")
         return values
     # @property
     # def index_mapping(self, lang):

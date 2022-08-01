@@ -26,6 +26,7 @@ def test_property_init_000_simple():
         "required": "True",
         "name": "Nom",
         "example": "Pierre Durand",
+        "is_vocabulary": "False"
     }
     p = Property.parse_obj(property)
     assert p.model == "user"
@@ -36,19 +37,209 @@ def test_property_init_000_simple():
     assert p.filter_values is False
     assert p.default_lang == "fr"
 
+def test_property_init_001_external_model():
+    property = {
+        "default_lang": "fr",
+        "model": "user",
+        "field": "name",
+        "datatype": "string",
+        "multilang": "False",
+        "multiple": "False",
+        "search_full_text": "True",
+        "filter_values": "False",
+        "required": "True",
+        "name": "Nom",
+        "example": "Pierre Durand",
+        "is_external_model": "True"
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        Property(**property)
+    msg = exc_info.value.errors()
+    assert msg[0]["msg"] == "Field is declared as an external model reference. Set external_model_name and external_model_keys", msg[0]["msg"]
+    
+def test_property_init_002_external_model():
+    property = {
+        "default_lang": "fr",
+        "model": "user",
+        "field": "name",
+        "datatype": "string",
+        "multilang": "False",
+        "multiple": "False",
+        "search_full_text": "True",
+        "filter_values": "False",
+        "required": "True",
+        "name": "Nom",
+        "example": "Pierre Durand",
+        "is_external_model": "True",
+        "external_model_name": "user"
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        Property(**property)
+    assert exc_info.value.errors()[0]["msg"] == "Field is declared as an external model reference. Set external_model_keys ", exc_info.value.errors()[0]["msg"]
+def test_property_init_003_external_model():
+    property = {
+        "default_lang": "fr",
+        "model": "user",
+        "field": "name",
+        "datatype": "string",
+        "multilang": "False",
+        "multiple": "False",
+        "search_full_text": "True",
+        "filter_values": "False",
+        "required": "True",
+        "name": "Nom",
+        "example": "Pierre Durand",
+        "is_external_model": "True",
+        "external_model_keys": "id|name"
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        Property(**property)
+    assert exc_info.value.errors()[0]["msg"] == "Field is declared as an external model reference. Set external_model_name ", exc_info.value.errors()[0]["msg"]
+
+def test_property_init_004_external_model():
+    property = {
+        "default_lang": "fr",
+        "model": "user",
+        "field": "name",
+        "datatype": "string",
+        "multilang": "False",
+        "multiple": "False",
+        "search_full_text": "True",
+        "filter_values": "False",
+        "required": "True",
+        "name": "Nom",
+        "example": "Pierre Durand",
+        "is_external_model": "True",
+        "external_model_name": "user",
+        "external_model_keys": "id|user"
+    }
+    p = Property.parse_obj(property)
+    assert p.model == "user"
+    assert p.field == "name"
+    assert p.datatype == "string"
+    assert p.required is True
+    assert p.search_full_text is True
+    assert p.filter_values is False
+    assert p.default_lang == "fr"
+    assert p.is_external_model == True
+
+def test_propert_init_002_vocabulary_declaration():
+    property = {
+        "model": "dataset",
+        "field": "updated_frequency",
+        "datatype": "string",
+        "multilang": True,
+        "multiple": True,
+        "search_full_text": False,
+        "filter_values": True,
+        "required": False,
+        "name": "Fréquence de mise à jour",
+        "example": "Mensuelle|Bi-hebdomadaire",
+        "is_vocabulary": True,
+        "vocabulary_name": None,
+        "filename": "vocabularies/frequency.csv",
+        "dcat_label": "freq:",
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        Property(**property)
+    assert exc_info.value.errors() == [
+        {
+            "loc": ("__root__",),
+            "msg": "Field is declared as a vocabulary and no vocabulary name has been "
+            "provided. Set `vocabulary_name` ",
+            "type": "value_error",
+        }
+    ], exc_info.value.errors()
+
+
+def test_propert_init_003_vocabulary_declaration():
+    property = {
+        "model": "dataset",
+        "field": "updated_frequency",
+        "datatype": "string",
+        "multilang": True,
+        "multiple": True,
+        "search_full_text": False,
+        "filter_values": True,
+        "required": False,
+        "name": "Fréquence de mise à jour",
+        "is_vocabulary": False,
+        "vocabulary_name": "frequency",
+        "filename": "vocabularies/frequency.csv"
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        Property(**property)
+    assert exc_info.value.errors() == [
+        {
+            "loc": ("__root__",),
+            'msg': 'Field has a vocabulary name and is not declared as a vocabulary. Set `is_vocabulary` to True. ',
+            "type": "value_error",
+        }
+    ], exc_info.value.errors()
+def test_propert_init_004_vocabulary_declaration():
+    property = {
+        "model": "dataset",
+        "field": "updated_frequency",
+        "datatype": "string",
+        "multilang": True,
+        "multiple": True,
+        "search_full_text": False,
+        "filter_values": True,
+        "required": False,
+        "name": "Fréquence de mise à jour",
+        "is_vocabulary": True,
+        "vocabulary_name": "frequency",
+        "filename": "vocabularies/frequency.csv"
+    }
+
+    with pytest.raises(ValidationError) as exc_info:
+        Property(**property)
+    assert exc_info.value.errors() == [
+        {
+            "loc": ("__root__",),
+            "msg": 'File not found error: `/home/c24b/projets/v3/backend/src/cocat/vocabularies/frequency.csv`.',
+            "type": "value_error",
+        }
+    ], exc_info.value.errors()
+
+def test_propert_init_005_vocabulary_declaration():
+    property = {
+        "model": "dataset",
+        "field": "mediatype",
+        "datatype": "string",
+        "multilang": True,
+        "multiple": True,
+        "search_full_text": False,
+        "filter_values": True,
+        "required": False,
+        "name": "Format des données",
+        "is_vocabulary": True,
+        "vocabulary_name": "media_type",
+        "filename": "vocabularies/media_type.csv"
+    }
+
+    p = Property(**property)
+    assert p.required is False
+    assert p.is_vocabulary == True, p.is_vocabulary
+    assert p.labels == ['pdf',
+		'date',
+		'binaire',
+		'texte',
+		'rapport',
+		'xls',
+		'csv',
+		'integer',
+		'ascii',
+		'cartographie',
+		'vector',
+		'nombres',
+		'ods',
+		'carte',
+		'chiffres',
+		'image'], p.labels
 
 def test_propert_init_001_wrong_datatype_for_search():
-    model: str
-    field: str
-    default_lang: str = "fr"
-    multilang: bool = False
-    datatype: str = "string"
-    required: bool = True
-    multiple: bool = False
-    search_full_text: bool = False
-    filter_values: bool = False
-    is_external_model: bool = False
-    is_vocabulary: bool = False
+   
     property = {
         "model": "user",
         "field": "name",
@@ -100,56 +291,6 @@ def test_propert_init_001_wrong_filter():
             "type": "value_error",
         }
     ], exc_info.value.errors()
-
-
-def test_propert_init_002_vocabulary_declaration():
-    property = {
-        "model": "dataset",
-        "field": "updated_frequency",
-        "datatype": "string",
-        "multilang": True,
-        "multiple": True,
-        "search_full_text": False,
-        "filter_values": True,
-        "required": False,
-        "name": "Fréquence de mise à jour",
-        "example": "Mensuelle|Bi-hebdomadaire",
-        "is_vocabulary": True,
-        "vocabulary_name": None,
-        "filename": "vocabularies/frequency.csv",
-        "dcat_label": "freq:",
-    }
-    with pytest.raises(ValidationError) as exc_info:
-        Property(**property)
-    assert exc_info.value.errors() == [
-        {
-            "loc": ("__root__",),
-            "msg": "Field is declared as a vocabulary and no vocabulary name has been "
-            "provided. Set `vocabulary_name` ",
-            "type": "value_error",
-        }
-    ], exc_info.value.errors()
-
-
-def test_propert_init_003_vocabulary_declaration():
-    property = {
-        "model": "dataset",
-        "field": "updated_frequency",
-        "datatype": "string",
-        "multilang": True,
-        "multiple": True,
-        "search_full_text": False,
-        "filter_values": True,
-        "required": False,
-        "name": "Fréquence de mise à jour",
-        "example": "Mensuelle|Bi-hebdomadaire",
-        "is_vocabulary": True,
-        "vocabulary_name": "frequency",
-        "filename": "vocabularies/frequency.csv"
-    }
-    p = Property(**property)
-    assert p.required is True
-    assert p.is_vocabulary == True, p.is_vocabulary
 
 
 # def test_property_init_001():
