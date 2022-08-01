@@ -36,6 +36,84 @@ def test_property_init_000_simple():
     assert p.search_full_text is True
     assert p.filter_values is False
     assert p.default_lang == "fr"
+def test_property_init_000_lang():
+    property = {
+        "default_lang": "su",
+        "model": "user",
+        "field": "name",
+        "datatype": "string",
+        "multilang": "False",
+        "multiple": "False",
+        "search_full_text": "True",
+        "filter_values": "False",
+        "required": "True",
+        "name": "Nom",
+        "example": "Pierre Durand",
+        "is_external_model": "True"
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        Property(**property)
+    msg = exc_info.value.errors()
+    assert msg[0]["msg"] == "Lang su is not supported. Languages supported are French (default) fr and English en", msg[0]["msg"]
+
+def test_property_init_000_datatype():
+    property = {
+        "default_lang": "en",
+        "model": "user",
+        "field": "name",
+        "datatype": "str",
+        "multilang": "False",
+        "multiple": "False",
+        "search_full_text": "False",
+        "filter_values": "False",
+        "required": "True",
+        "name": "Nom",
+        "example": "Pierre Durand",
+        "is_external_model": "True"
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        Property(**property)
+    msg = exc_info.value.errors()
+    assert msg[0]["msg"] == "datatype must be in ['string', 'integer', 'object', 'date', 'datetime', 'integer', 'boolean']", msg[0]["msg"]
+
+def test_property_init_000_date():
+    property = {
+        "default_lang": "en",
+        "model": "user",
+        "field": "name",
+        "datatype": "string",
+        "multilang": "False",
+        "multiple": "False",
+        "search_full_text": "True",
+        "filter_values": "False",
+        "required": "True",
+        "name": "Nom",
+        "example": "Pierre Durand",
+        "is_external_model": "True",
+        "created_date": "2022/01/01"
+    }
+    with pytest.raises(ValidationError) as exc_info:
+        Property(**property)
+    msg = exc_info.value.errors()
+    assert msg[0]["msg"] == "time data '2022/01/01' does not match format '%d/%m/%Y'", msg[0]["msg"]
+
+def test_property_init_001_date():
+    property = {
+        "default_lang": "en",
+        "model": "user",
+        "field": "name",
+        "datatype": "string",
+        "multilang": "False",
+        "multiple": "False",
+        "search_full_text": "True",
+        "filter_values": "False",
+        "required": "True",
+        "name": "Nom",
+        "example": "Pierre Durand",
+        "created_date": "01/01/2022"
+    }
+    p = Property(**property)
+    assert p.created_date == datetime.date(2022, 1, 1)
 
 def test_property_init_001_external_model():
     property = {
@@ -160,7 +238,7 @@ def test_propert_init_003_vocabulary_declaration():
         "multilang": True,
         "multiple": True,
         "search_full_text": False,
-        "filter_values": True,
+        "filter_values": False,
         "required": False,
         "name": "Fréquence de mise à jour",
         "is_vocabulary": False,
@@ -260,9 +338,8 @@ def test_propert_init_001_wrong_datatype_for_search():
         Property(**property)
     assert exc_info.value.errors() == [
         {
-            "loc": ("search",),
-            "msg": "name search option is set to True, it can't be index in full text: "
-            "invalid integer. Set search option to False",
+            "loc": ("__root__",),
+            "msg": "Full text search can't be activated for this datatype. Must be a string or an external_model",
             "type": "value_error",
         }
     ]
@@ -286,8 +363,8 @@ def test_propert_init_001_wrong_filter():
         Property(**property)
     assert exc_info.value.errors() == [
         {
-            "loc": ("filter",),
-            "msg": "name can't be filtered as it consists of a free text . Filter should be executed on a following datatype: an integer, date range or on an external_model value or on vocabulary labels",
+            "loc": ("__root__",),
+            "msg": "Filter can't be activated for this field: field should not consists of free text",
             "type": "value_error",
         }
     ], exc_info.value.errors()

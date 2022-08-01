@@ -132,6 +132,7 @@ class Property(BaseModel):
         if not isinstance(value, list):
             return value.split("|")
         return value
+    
     @validator("created_date", "updated_date", pre=True)
     def check_date_format(cls, value):
         return datetime.datetime.strptime(
@@ -185,7 +186,22 @@ class Property(BaseModel):
         if isinstance(value, list):
             return [v.strip() for v in value]
         return value.strip()
-
+    @validator("model",
+        "field",
+        "datatype",
+        "external_model_name",
+        "vocabulary_name",
+        "filename",
+        "dcat_label",
+        "inspire_label",
+        "example",
+        "default",
+        "external_model_keys",
+        "labels",
+        "references",
+        "uris",
+        pre=True,
+        allow_reuse=True)
     def if_empty_set_to_none(cls, value):
         """set empty string to None"""
         if value == "":
@@ -226,42 +242,7 @@ class Property(BaseModel):
             raise ValueError(f"datatype must be in {accepted_datatypes}")
         return value
     
-    # @validator("external_model_name", "external_model_keys", pre=True)
-    # def check_external_model(cls, value, values):
-    #     if values["is_external_model"]:
-    #         if value == "" or value is None:
-    #             raise ValueError(
-    #                 f"Field is declared as an external model you must provide the name and the keys for the external model"
-    #             )
-    #     return value
-                
-    # @validator("vocabulary_name", pre=True)
-    # def set_vocabulary_name(cls, value, values):
-    #     if values["is_vocabulary"]:
-    #         if value == "" or value is None:
-    #             raise ValueError(
-    #                 f"Field is declared as a vocabulary: you must provide the name of the vocabulary"
-    #             )
-        
-    #     return value
     
-    # @validator("filename", pre=True)
-    # def check_voc_name_with_filename(cls, value, values):
-    #     if values["is_vocabulary"]:
-    #         if value == "" or value is None:
-    #             raise ValueError(
-    #                 f"Field is declared as a vocabulary: vocabulary as to be initialized with a csv file"
-    #             )
-    #         else:
-                    
-    #             value = os.path.join(os.path.dirname(__file__), value)
-    #             if  os.path.isfile(value) is False:
-    #                 raise ValueError(
-    #                     f"File not found error: `{value}`."
-    #                     )    
-    #             else:
-    #                 return value                   
-    #     return value
     @root_validator
     def check_external_model(cls, values):
         if values["is_external_model"] is True:
@@ -280,7 +261,7 @@ class Property(BaseModel):
         return values
 
     @root_validator
-    def init_vocabulary(cls, values):
+    def check_vocabulary(cls, values):
         if values["is_vocabulary"] is True:
             if values["vocabulary_name"] is not None:
                 if values["filename"] is None: 
@@ -304,6 +285,20 @@ class Property(BaseModel):
         else:
             if values["vocabulary_name"] is not None:
                 raise ValueError("Field has a vocabulary name and is not declared as a vocabulary. Set `is_vocabulary` to True. ")
+        return values
+    
+    @root_validator
+    def check_full_text_search(cls, values):
+        if values["search_full_text"] is True:
+            if values["datatype"] not in ["string", "object"]:
+                raise ValueError("Full text search can't be activated for this datatype. Must be a string or an external_model")
+        return values
+    
+    @root_validator
+    def check_filter_values(cls, values):
+        if values["filter_values"] is True:
+            if values["is_external_model"] is False and values["is_vocabulary"] is False and values["datatype"] == "string":
+                raise ValueError("Filter can't be activated for this field: field should not consists of free text")
         return values
     # @property
     # def index_mapping(self, lang):
